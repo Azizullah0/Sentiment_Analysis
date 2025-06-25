@@ -1,0 +1,9 @@
+!pip install -U scikit-learn
+!pip uninstall -y transformers peft
+!rm -rf /usr/local/lib/python3.11/dist-packages/transformers*
+!pip cache purge
+!pip install transformers==4.36.2 peft==0.8.2
+!pip install datasets accelerate
+!pip install --upgrade accelerate==0.30.1
+!pip install numpy==1.24.4
+!pip uninstall -y jax jaxlib
