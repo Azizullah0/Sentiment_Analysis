@@ -7,7 +7,7 @@ from transformers import (
     EarlyStoppingCallback
 )
 from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_score
-from utils import load_dataset, split_dataset, tokenize_datasets
+from utils.dataset_utils import load_dataset, split_dataset, tokenize_datasets
 
 # 1. Load and prepare data
 df = load_dataset('datasets/Training_Ready_Labeled.csv', label_col='label_id')  # Use your actual CSV and label column
