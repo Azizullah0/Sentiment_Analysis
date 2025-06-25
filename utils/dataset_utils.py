@@ -1,7 +1,4 @@
 import os
-
-# File: utils/dataset_utils.py
-dataset_utils_code = """
 import pandas as pd
 from sklearn.model_selection import train_test_split
 from datasets import Dataset
@@ -31,4 +28,3 @@ def tokenize_datasets(train_df, test_df, model_name="HooshvareLab/bert-base-pars
     test_dataset.set_format("torch", columns=["input_ids", "attention_mask", "labels"])
 
     return train_dataset, test_dataset, tokenizer
-"""

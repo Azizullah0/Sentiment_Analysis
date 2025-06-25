@@ -1,4 +1,4 @@
-predict_script_code = """
+
 import pandas as pd
 import torch
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
@@ -35,18 +35,4 @@ for item in dataset:
 df["predicted_label"] = preds
 df.to_csv("datasets/Cleaned_Dataset_Labeled.csv", index=False)
 print("Saved predictions to Cleaned_Dataset_Labeled.csv")
-"""
 
-import pandas as pd
-from ace_tools import display_dataframe_to_user
-
-scripts_df = pd.DataFrame({
-    "Filename": ["utils/dataset_utils.py", "scripts/train.py", "scripts/predict.py"],
-    "Purpose": ["Loading, splitting, and tokenizing datasets",
-                "Training the model using Trainer API",
-                "Predicting and labeling new data with trained model"]
-})
-
-display_dataframe_to_user("Sentiment Analysis Project Scripts", scripts_df)
-
-(train_script_code, predict_script_code, dataset_utils_code)
