@@ -1,5 +1,14 @@
 import sys
 import os
+import logging
+import warnings
+
+# Silence most logs and warnings for cleaner output
+logging.basicConfig(level=logging.WARNING)
+warnings.filterwarnings("ignore", category=FutureWarning)
+os.environ["TRANSFORMERS_VERBOSITY"] = "error"
+
+# Add project root to sys.path for utils import
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 import numpy as np
@@ -14,11 +23,15 @@ from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_sc
 from utils.dataset_utils import load_dataset, split_dataset, tokenize_datasets
 
 # 1. Load and prepare data
-df = load_dataset('datasets/Training_Ready_Labeled.csv', label_col='label_id')  # Use your actual CSV and label column
+df = load_dataset('datasets/Training_Ready_Labeled.csv', label_col='label_id')
 train_df, test_df = split_dataset(df)
 
 # 2. Tokenize
-train_dataset, test_dataset, tokenizer = tokenize_datasets(train_df, test_df, model_name="HooshvareLab/bert-base-parsbert-uncased", max_length=128)
+train_dataset, test_dataset, tokenizer = tokenize_datasets(
+    train_df, test_df,
+    model_name="HooshvareLab/bert-base-parsbert-uncased",
+    max_length=128
+)
 
 # 3. Model
 num_labels = len(df['labels'].unique())
@@ -54,7 +67,9 @@ training_args = TrainingArguments(
     logging_dir='models/logs',
     logging_strategy="epoch",
     save_total_limit=2,
-    report_to="none"
+    report_to="none",
+    disable_tqdm=True,         # Hide progress bars
+    logging_level="error"      # Only show errors
 )
 
 # 6. Trainer
@@ -72,8 +87,11 @@ trainer = Trainer(
 # 7. Train
 trainer.train()
 
-# Save model and tokenizer to Google Drive
-# Save model and tokenizer to Google Drive
+# 8. Evaluate and print results
+results = trainer.evaluate()
+print("Final evaluation metrics:", results)
+
+# 9. Save model and tokenizer to Google Drive
 save_path = "/content/drive/MyDrive/parsbert_emotion"
 trainer.save_model(save_path)
 tokenizer.save_pretrained(save_path)
