@@ -72,6 +72,8 @@ trainer = Trainer(
 # 7. Train
 trainer.train()
 
-# 8. Save model and tokenizer
-trainer.save_model("models/parsbert_emotion")
-tokenizer.save_pretrained("models/parsbert_emotion")
+# Save model and tokenizer to Google Drive
+# Save model and tokenizer to Google Drive
+save_path = "/content/drive/MyDrive/parsbert_emotion"
+trainer.save_model(save_path)
+tokenizer.save_pretrained(save_path)
