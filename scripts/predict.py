@@ -5,7 +5,7 @@ from transformers import AutoTokenizer, AutoModelForSequenceClassification
 from datasets import Dataset
 
 # Load model and tokenizer
-model_path = "models/parsbert_emotion"
+model_path = "/content/drive/MyDrive/parsbert_emotion"
 tokenizer = AutoTokenizer.from_pretrained(model_path)
 model = AutoModelForSequenceClassification.from_pretrained(model_path)
 model.eval()
