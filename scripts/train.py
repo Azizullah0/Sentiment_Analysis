@@ -60,7 +60,7 @@ training_args = TrainingArguments(
     learning_rate=2e-5,
     per_device_train_batch_size=8,
     per_device_eval_batch_size=8,
-    num_train_epochs=6,
+    num_train_epochs=4,
     weight_decay=0.01,
     load_best_model_at_end=True,
     metric_for_best_model="accuracy",
@@ -69,7 +69,7 @@ training_args = TrainingArguments(
     save_total_limit=2,
     report_to="none",
     disable_tqdm=True,         # Hide progress bars
-    logging_level="error"      # Only show errors
+    #logging_level="error"      # Only show errors
 )
 
 # 6. Trainer
