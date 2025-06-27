@@ -3,12 +3,12 @@ import os
 import logging
 import warnings
 
-# Silence most logs and warnings for cleaner output
+
 logging.basicConfig(level=logging.WARNING)
 warnings.filterwarnings("ignore", category=FutureWarning)
 os.environ["TRANSFORMERS_VERBOSITY"] = "error"
 
-# Add project root to sys.path for utils import
+
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 import numpy as np
@@ -22,18 +22,18 @@ from transformers import (
 from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_score
 from utils.dataset_utils import load_dataset, split_dataset, tokenize_datasets
 
-# 1. Load and prepare data
+
 df = load_dataset('datasets/Training_Ready_Labeled.csv', label_col='label_id')
 train_df, test_df = split_dataset(df)
 
-# 2. Tokenize
+
 train_dataset, test_dataset, tokenizer = tokenize_datasets(
     train_df, test_df,
     model_name="HooshvareLab/bert-base-parsbert-uncased",
     max_length=128
 )
 
-# 3. Model
+
 num_labels = len(df['labels'].unique())
 model = AutoModelForSequenceClassification.from_pretrained(
     "HooshvareLab/bert-base-parsbert-uncased",
@@ -41,7 +41,7 @@ model = AutoModelForSequenceClassification.from_pretrained(
 )
 data_collator = DataCollatorWithPadding(tokenizer=tokenizer)
 
-# 4. Metrics
+
 def compute_metrics(eval_pred):
     logits, labels = eval_pred
     preds = np.argmax(logits, axis=1)
@@ -52,7 +52,7 @@ def compute_metrics(eval_pred):
         "recall": recall_score(labels, preds, average="weighted"),
     }
 
-# 5. Training arguments
+
 training_args = TrainingArguments(
     output_dir="models/parsbert_emotion",
     evaluation_strategy="epoch",
@@ -68,11 +68,10 @@ training_args = TrainingArguments(
     logging_strategy="epoch",
     save_total_limit=2,
     report_to="none",
-    disable_tqdm=True,         # Hide progress bars
-    #logging_level="error"      # Only show errors
+    disable_tqdm=True,         
 )
 
-# 6. Trainer
+
 trainer = Trainer(
     model=model,
     args=training_args,
@@ -84,14 +83,13 @@ trainer = Trainer(
     callbacks=[EarlyStoppingCallback(early_stopping_patience=2)]
 )
 
-# 7. Train
+
 trainer.train()
 
-# 8. Evaluate and print results
 results = trainer.evaluate()
 print("Final evaluation metrics:", results)
 
-# 9. Save model and tokenizer to Google Drive
+
 save_path = "/content/drive/MyDrive/parsbert_emotion"
 trainer.save_model(save_path)
 tokenizer.save_pretrained(save_path)
