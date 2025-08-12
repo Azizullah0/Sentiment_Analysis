@@ -5,7 +5,7 @@ from transformers import AutoTokenizer, AutoModelForSequenceClassification
 from datasets import Dataset
 
 
-model_path = "/content/drive/MyDrive/parsbert_emotion"
+model_path = "/content/drive/MyDrive/parsbert400_emotion"
 tokenizer = AutoTokenizer.from_pretrained(model_path)
 model = AutoModelForSequenceClassification.from_pretrained(model_path)
 model.eval()
@@ -13,7 +13,7 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model.to(device)
 
 
-df = pd.read_csv("datasets/Cleaned_Dataset.csv")
+df = pd.read_csv("/content/drive/MyDrive/ColabFoulder/PeopleMedia.csv")
 dataset = Dataset.from_pandas(df)
 
 
@@ -35,5 +35,5 @@ with torch.no_grad():
         preds.extend(batch_preds)
 
 df["predicted_label"] = preds
-df.to_csv("datasets/Cleaned_Dataset_Labeled.csv", index=False)
-print("Saved predictions to datasets/Cleaned_Dataset_Labeled.csv")
+df.to_csv("datasets/peopleLabeled.csv", index=False)
+print("Saved predictions to datasets/peopleLabeled.csv")
