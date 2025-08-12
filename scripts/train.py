@@ -26,7 +26,8 @@ from utils.dataset_utils import load_dataset, split_dataset, tokenize_datasets
 df = load_dataset('/content/drive/MyDrive/ColabFoulder/Labeled_400K_with_emotions.csv', label_col='label_id')
 train_df, test_df = split_dataset(df)
 
-
+train_df["clean"] = train_df["clean"].fillna("").astype(str)
+test_df["clean"] = test_df["clean"].fillna("").astype(str)
 train_dataset, test_dataset, tokenizer = tokenize_datasets(
     train_df, test_df,
     model_name="HooshvareLab/bert-base-parsbert-uncased",
