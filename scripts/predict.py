@@ -13,7 +13,7 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model.to(device)
 
 
-df = pd.read_csv("/content/drive/MyDrive/ColabFoulder/PeopleMedia.csv")
+df = pd.read_csv("/content/drive/MyDrive/ColabFoulder/BV.csv")
 dataset = Dataset.from_pandas(df)
 
 
