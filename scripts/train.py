@@ -23,7 +23,7 @@ from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_sc
 from utils.dataset_utils import load_dataset, split_dataset, tokenize_datasets
 
 
-df = load_dataset('/content/drive/MyDrive/ColabFoulder/Labeled_400K.csv', label_col='label_id')
+df = load_dataset('/content/drive/MyDrive/ColabFoulder/Labeled_400K.csv', label_col='label')
 train_df, test_df = split_dataset(df)
 
 
