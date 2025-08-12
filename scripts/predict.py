@@ -18,7 +18,7 @@ dataset = Dataset.from_pandas(df)
 
 
 def tokenize(batch):
-    return tokenizer(batch["clean"], padding="max_length", truncation=True, max_length=512)
+    return tokenizer(batch["text"], padding="max_length", truncation=True, max_length=512)
 
 dataset = dataset.map(tokenize, batched=True)
 dataset.set_format("torch", columns=["input_ids", "attention_mask"])
