@@ -23,7 +23,7 @@ from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_sc
 from utils.dataset_utils import load_dataset, split_dataset, tokenize_datasets
 
 
-df = load_dataset('datasets/Training_Ready_Labeled.csv', label_col='label_id')
+df = load_dataset('datasets/Labeled_400K.csv', label_col='label_id')
 train_df, test_df = split_dataset(df)
 
 
@@ -90,6 +90,6 @@ results = trainer.evaluate()
 print("Final evaluation metrics:", results)
 
 
-save_path = "/content/drive/MyDrive/parsbert_emotion"
+save_path = "/content/drive/MyDrive/parsbert400_emotion"
 trainer.save_model(save_path)
 tokenizer.save_pretrained(save_path)
