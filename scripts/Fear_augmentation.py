@@ -15,8 +15,8 @@ translator = EasyNMT('opus-mt')  # supports fa <-> en
 augmented_texts = []
 for txt in fear_df["clean"].tolist():
     try:
-        en = translator.translate(txt, target_lang='en')   # fa -> en
-        fa = translator.translate(en, target_lang='fa')   # en -> fa
+        en = translator.translate(txt, source_lang="fa", target_lang="en")   # fa -> en
+        fa = translator.translate(en, source_lang="en", target_lang="fa")   # en -> fa
         if fa != txt:
             augmented_texts.append(fa)
     except Exception as e:
