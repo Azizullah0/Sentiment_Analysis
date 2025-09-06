@@ -15,7 +15,7 @@ from sklearn.metrics import accuracy_score, f1_score
 import torch
 
 df = pd.read_csv(PATHS["labeled_data"])
-df = df.rename(columns={'text': 'clean', 'label': 'labels'})
+df = df.rename(columns={'text': 'clean', 'label': 'label'})
 
 train_df, test_df = train_test_split(df, test_size=0.2, stratify=df['labels'], random_state=42)
 
