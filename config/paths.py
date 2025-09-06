@@ -1,21 +1,8 @@
 import os
 import datetime
 
-def is_colab():
-    try:
-        import google.colab
-        return True
-    except ImportError:
-        return False
-
-IN_COLAB = is_colab()
-
-if IN_COLAB:
-    from google.colab import drive
-    drive.mount('/content/drive')
-    BASE_PATH = '/content/drive/MyDrive/Sentiment_Analysis'
-else:
-    BASE_PATH = './data'
+# Simple path configuration - no drive mounting here
+BASE_PATH = '/content/drive/MyDrive/Sentiment_Analysis'
 
 timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M")
 
