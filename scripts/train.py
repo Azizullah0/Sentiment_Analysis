@@ -37,7 +37,7 @@ def tokenize(batch):
 train_dataset = train_dataset.map(tokenize, batched=True)
 test_dataset = test_dataset.map(tokenize, batched=True)
 
-columns = ["input_ids", "attention_mask", "labels"]
+columns = ["input_ids", "attention_mask", "label"]
 train_dataset.set_format("torch", columns=columns)
 test_dataset.set_format("torch", columns=columns)
 
