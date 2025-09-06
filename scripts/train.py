@@ -18,7 +18,7 @@ print(f"Loading data from: {PATHS['labeled_data']}")
 df = pd.read_csv(PATHS["labeled_data"])
 print(f"Columns in CSV: {df.columns.tolist()}")
 
-# Convert text labels to numeric IDs
+# Convert text labels to numeric IDs - NOTE THE SPACE IN 'Label '
 label_mapping = {
     "Hope": 0,
     "Happy": 1, 
@@ -30,8 +30,8 @@ label_mapping = {
     "Fear": 7
 }
 
-df['labels'] = df['Label'].map(label_mapping)
-print(f"Label distribution:\n{df['Label'].value_counts()}")
+df['labels'] = df['Label '].map(label_mapping)  # <- NOTE THE SPACE HERE
+print(f"Label distribution:\n{df['Label '].value_counts()}")  # <- AND HERE
 print(f"Numeric labels:\n{df['labels'].value_counts().sort_index()}")
 
 # Use 'text' column for training
