@@ -14,13 +14,33 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score, f1_score
 import torch
 
+print(f"Loading data from: {PATHS['labeled_data']}")
 df = pd.read_csv(PATHS["labeled_data"])
-df = df.rename(columns={'text': 'clean', 'label': 'label'})
+print(f"Columns in CSV: {df.columns.tolist()}")
+
+# Convert text labels to numeric IDs
+label_mapping = {
+    "Hope": 0,
+    "Happy": 1, 
+    "Neutral": 2,
+    "Surprise": 3,
+    "Disgust": 4,
+    "Sad": 5,
+    "Anger": 6,
+    "Fear": 7
+}
+
+df['labels'] = df['Label'].map(label_mapping)
+print(f"Label distribution:\n{df['Label'].value_counts()}")
+print(f"Numeric labels:\n{df['labels'].value_counts().sort_index()}")
+
+# Use 'text' column for training
+df = df.rename(columns={'text': 'clean'})
 
 train_df, test_df = train_test_split(df, test_size=0.2, stratify=df['labels'], random_state=42)
 
-train_dataset = Dataset.from_pandas(train_df)
-test_dataset = Dataset.from_pandas(test_df)
+train_dataset = Dataset.from_pandas(train_df[['clean', 'labels']])
+test_dataset = Dataset.from_pandas(test_df[['clean', 'labels']])
 
 model_name = "HooshvareLab/bert-base-parsbert-uncased"
 tokenizer = AutoTokenizer.from_pretrained(model_name)
@@ -37,7 +57,7 @@ def tokenize(batch):
 train_dataset = train_dataset.map(tokenize, batched=True)
 test_dataset = test_dataset.map(tokenize, batched=True)
 
-columns = ["input_ids", "attention_mask", "label"]
+columns = ["input_ids", "attention_mask", "labels"]
 train_dataset.set_format("torch", columns=columns)
 test_dataset.set_format("torch", columns=columns)
 
@@ -76,4 +96,6 @@ trainer = Trainer(
     compute_metrics=compute_metrics
 )
 
+print("Starting training...")
 trainer.train()
+print(f"Training complete! Model saved to: {PATHS['finetuned_model']}")
