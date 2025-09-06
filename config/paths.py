@@ -14,7 +14,7 @@ timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M")
 
 PATHS = {
     "raw_data": os.path.join(BASE_PATH, "sampled_for_labeling_cleaned.csv"),
-    "labeled_data": os.path.join(BASE_PATH, "Labeled_4K.csv"),
+    "labeled_data": os.path.join(BASE_PATH, "processed/Labeled_4K.csv"),
     "base_model": os.path.join(BASE_PATH, "parsbert_emotion"),
     "finetuned_model": os.path.join(BASE_PATH, f"fine_tuned_model_{timestamp}"),
 }
