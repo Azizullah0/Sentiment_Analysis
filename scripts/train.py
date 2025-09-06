@@ -18,20 +18,28 @@ print(f"Loading data from: {PATHS['labeled_data']}")
 df = pd.read_csv(PATHS["labeled_data"])
 print(f"Columns in CSV: {df.columns.tolist()}")
 
-# Convert text labels to numeric IDs - NOTE THE SPACE IN 'Label '
+# Convert text labels to numeric IDs - FIXED "Suprise" to match your data
 label_mapping = {
     "Hope": 0,
     "Happy": 1, 
     "Neutral": 2,
-    "Surprise": 3,
+    "Suprise": 3,    # Changed from "Surprise" to "Suprise"
     "Disgust": 4,
     "Sad": 5,
     "Anger": 6,
     "Fear": 7
 }
 
-df['labels'] = df['Label '].map(label_mapping)  # <- NOTE THE SPACE HERE
-print(f"Label distribution:\n{df['Label '].value_counts()}")  # <- AND HERE
+df['labels'] = df['Label '].map(label_mapping)
+
+# Check for and remove any NaN values in labels
+print(f"Number of NaN values in labels: {df['labels'].isna().sum()}")
+if df['labels'].isna().sum() > 0:
+    print("Rows with NaN labels:")
+    print(df[df['labels'].isna()]['Label '].value_counts())
+    df = df.dropna(subset=['labels'])  # Remove rows with NaN labels
+
+print(f"Label distribution:\n{df['Label '].value_counts()}")
 print(f"Numeric labels:\n{df['labels'].value_counts().sort_index()}")
 
 # Use 'text' column for training
