@@ -1,7 +1,6 @@
 import pandas as pd
 import torch
-from torch.utils.data import DataLoader
-from transformers import AutoTokenizer, AutoModelForSequenceClassification
+from transformers import AutoTokenizer, AutoModelForSequenceClassification, TrainingArguments, Trainer
 from datasets import Dataset
 import numpy as np
 
@@ -20,16 +19,14 @@ label_mapping = {
 # Reverse mapping for prediction
 id2label = {v: k for k, v in label_mapping.items()}
 
-# Model path (should be the same as your trained model directory)
-model_path = "/content/drive/MyDrive/Sentiment_Analysis/Models/fine_tuned_model_20250906_1241"
+# Use the BEST checkpoint (usually the last one)
+checkpoint_path = "/content/drive/MyDrive/Sentiment_Analysis/Models/fine_tuned_model_20250906_1241/checkpoint-591"
 
-# Load tokenizer and model
-tokenizer = AutoTokenizer.from_pretrained(model_path)
-model = AutoModelForSequenceClassification.from_pretrained(
-    model_path,
-    num_labels=8,
-    problem_type="single_label_classification"
-)
+print(f"Loading model from checkpoint: {checkpoint_path}")
+
+# Load tokenizer and model from checkpoint
+tokenizer = AutoTokenizer.from_pretrained(checkpoint_path)
+model = AutoModelForSequenceClassification.from_pretrained(checkpoint_path)
 
 # Set device
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -62,42 +59,28 @@ dataset = Dataset.from_pandas(df)
 def tokenize(batch):
     return tokenizer(
         batch["clean"], 
-        padding="max_length", 
+        padding=True,  # Use dynamic padding for efficiency
         truncation=True, 
-        max_length=512  # Use the same as your training max_length
+        max_length=512
     )
 
 # Tokenize the dataset
 dataset = dataset.map(tokenize, batched=True)
-dataset.set_format("torch", columns=["input_ids", "attention_mask"])
 
-# Create DataLoader
-loader = DataLoader(dataset, batch_size=32)
+# Create Trainer for easy prediction
+trainer = Trainer(model=model)
 
-# Prediction
-preds = []
-probabilities = []
-
-with torch.no_grad():
-    for batch in loader:
-        input_ids = batch["input_ids"].to(device)
-        attention_mask = batch["attention_mask"].to(device)
-        
-        outputs = model(input_ids=input_ids, attention_mask=attention_mask)
-        
-        # Get predictions
-        batch_preds = torch.argmax(outputs.logits, dim=1).cpu().numpy()
-        preds.extend(batch_preds)
-        
-        # Get probabilities for analysis
-        batch_probs = torch.nn.functional.softmax(outputs.logits, dim=1).cpu().numpy()
-        probabilities.extend(batch_probs)
+# Predict
+print("Making predictions...")
+predictions = trainer.predict(dataset)
+preds = np.argmax(predictions.predictions, axis=1)
 
 # Add predictions to dataframe
 df["predicted_label"] = preds
 df["predicted_emotion"] = [id2label[pred] for pred in preds]
 
-# Add confidence scores (max probability for each prediction)
+# Get confidence scores
+probabilities = torch.nn.functional.softmax(torch.tensor(predictions.predictions), dim=1).numpy()
 df["confidence"] = [np.max(prob) for prob in probabilities]
 
 # Save results
