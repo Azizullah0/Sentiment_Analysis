@@ -1,11 +1,10 @@
 import os
 import datetime
-try:
-    from google.colab import drive
-    IN_COLAB = True
-except ImportError:
-    IN_COLAB = False
+
+IN_COLAB = 'google.colab' in str(get_ipython()) if hasattr(__builtins__, '__IPYTHON__') else False
+
 if IN_COLAB:
+    from google.colab import drive
     drive.mount('/content/drive')
     BASE_PATH = '/content/drive/MyDrive/ColabFoulder'
 else:
@@ -19,6 +18,7 @@ PATHS = {
     "base_model": os.path.join(BASE_PATH, "parsbert_emotion"),
     "finetuned_model": os.path.join(BASE_PATH, f"fine_tuned_model_{timestamp}"),
 }
+
 MODEL_CONFIG = {
     "max_length": 512,
     "batch_size": 16,

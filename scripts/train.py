@@ -2,6 +2,9 @@ import sys
 import os
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+os.environ['TRANSFORMERS_VERBOSITY'] = 'error'
+
 from config.paths import PATHS, MODEL_CONFIG
 from transformers import AutoTokenizer, AutoModelForSequenceClassification, TrainingArguments, Trainer, DataCollatorWithPadding
 from datasets import Dataset
@@ -9,6 +12,7 @@ import pandas as pd
 import numpy as np
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score, f1_score
+import torch
 
 df = pd.read_csv(PATHS["labeled_data"])
 df = df.rename(columns={'text': 'clean', 'label': 'labels'})
