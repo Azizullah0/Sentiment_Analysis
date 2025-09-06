@@ -39,6 +39,9 @@ if df['labels'].isna().sum() > 0:
     print(df[df['labels'].isna()]['Label '].value_counts())
     df = df.dropna(subset=['labels'])
 
+# Convert labels to integers
+df['labels'] = df['labels'].astype(int)
+
 print(f"Label distribution:\n{df['Label '].value_counts()}")
 print(f"Numeric labels:\n{df['labels'].value_counts().sort_index()}")
 
@@ -53,14 +56,10 @@ test_dataset = Dataset.from_pandas(test_df[['clean', 'labels']])
 model_name = "HooshvareLab/bert-base-parsbert-uncased"
 tokenizer = AutoTokenizer.from_pretrained(model_name)
 
-# CRITICAL FIX: Ensure labels are integers, not floats
-train_dataset = train_dataset.map(lambda x: {'labels': int(x['labels'])})
-test_dataset = test_dataset.map(lambda x: {'labels': int(x['labels'])})
-
 model = AutoModelForSequenceClassification.from_pretrained(
     model_name, 
     num_labels=8,
-    problem_type="single_label_classification"  # Explicitly set for single-label
+    problem_type="single_label_classification"
 )
 
 def tokenize(batch):
@@ -73,6 +72,14 @@ def tokenize(batch):
 
 train_dataset = train_dataset.map(tokenize, batched=True)
 test_dataset = test_dataset.map(tokenize, batched=True)
+
+# Convert labels to torch.long (int64) format
+def convert_labels_to_long(example):
+    example['labels'] = torch.tensor(example['labels'], dtype=torch.long)
+    return example
+
+train_dataset = train_dataset.map(convert_labels_to_long)
+test_dataset = test_dataset.map(convert_labels_to_long)
 
 columns = ["input_ids", "attention_mask", "labels"]
 train_dataset.set_format("torch", columns=columns)
