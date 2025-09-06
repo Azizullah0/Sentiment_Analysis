@@ -1,77 +1,66 @@
 import sys
 import os
-import logging
-import warnings
+sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
-
-logging.basicConfig(level=logging.WARNING)
-warnings.filterwarnings("ignore", category=FutureWarning)
-os.environ["TRANSFORMERS_VERBOSITY"] = "error"
-
-
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-
+from config.paths import PATHS, MODEL_CONFIG
+from transformers import AutoTokenizer, AutoModelForSequenceClassification, TrainingArguments, Trainer, DataCollatorWithPadding
+from datasets import Dataset
+import pandas as pd
 import numpy as np
-from transformers import (
-    AutoModelForSequenceClassification,
-    TrainingArguments,
-    Trainer,
-    DataCollatorWithPadding,
-    EarlyStoppingCallback
-)
-from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_score
-from utils.dataset_utils import load_dataset, split_dataset, tokenize_datasets
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import accuracy_score, f1_score
 
+df = pd.read_csv(PATHS["labeled_data"])
+df = df.rename(columns={'text': 'clean', 'label': 'labels'})
 
-df = load_dataset('/content/drive/MyDrive/ColabFoulder/Labeled_400K_with_emotions.csv', label_col='label_id')
-train_df, test_df = split_dataset(df)
+train_df, test_df = train_test_split(df, test_size=0.2, stratify=df['labels'], random_state=42)
 
-train_df["clean"] = train_df["clean"].fillna("").astype(str)
-test_df["clean"] = test_df["clean"].fillna("").astype(str)
-train_dataset, test_dataset, tokenizer = tokenize_datasets(
-    train_df, test_df,
-    model_name="HooshvareLab/bert-base-parsbert-uncased",
-    max_length=128
-)
+train_dataset = Dataset.from_pandas(train_df)
+test_dataset = Dataset.from_pandas(test_df)
 
+model_name = "HooshvareLab/bert-base-parsbert-uncased"
+tokenizer = AutoTokenizer.from_pretrained(model_name)
+model = AutoModelForSequenceClassification.from_pretrained(model_name, num_labels=8)
 
-num_labels = len(df['labels'].unique())
-model = AutoModelForSequenceClassification.from_pretrained(
-    "HooshvareLab/bert-base-parsbert-uncased",
-    num_labels=num_labels
-)
+def tokenize(batch):
+    return tokenizer(
+        batch["clean"], 
+        padding="max_length", 
+        truncation=True, 
+        max_length=MODEL_CONFIG["max_length"]
+    )
+
+train_dataset = train_dataset.map(tokenize, batched=True)
+test_dataset = test_dataset.map(tokenize, batched=True)
+
+columns = ["input_ids", "attention_mask", "labels"]
+train_dataset.set_format("torch", columns=columns)
+test_dataset.set_format("torch", columns=columns)
+
 data_collator = DataCollatorWithPadding(tokenizer=tokenizer)
 
-
-def compute_metrics(eval_pred):
-    logits, labels = eval_pred
-    preds = np.argmax(logits, axis=1)
-    return {
-        "accuracy": accuracy_score(labels, preds),
-        "f1": f1_score(labels, preds, average="weighted"),
-        "precision": precision_score(labels, preds, average="weighted"),
-        "recall": recall_score(labels, preds, average="weighted"),
-    }
-
-
 training_args = TrainingArguments(
-    output_dir="models/parsbert_emotion",
+    output_dir=PATHS["finetuned_model"],
     evaluation_strategy="epoch",
     save_strategy="epoch",
-    learning_rate=2e-5,
-    per_device_train_batch_size=8,
-    per_device_eval_batch_size=8,
-    num_train_epochs=4,
+    learning_rate=MODEL_CONFIG["learning_rate"],
+    per_device_train_batch_size=MODEL_CONFIG["batch_size"],
+    per_device_eval_batch_size=MODEL_CONFIG["batch_size"],
+    num_train_epochs=3,
     weight_decay=0.01,
     load_best_model_at_end=True,
-    metric_for_best_model="accuracy",
-    logging_dir='models/logs',
+    metric_for_best_model="f1",
+    logging_dir=os.path.join(PATHS["finetuned_model"], "logs"),
     logging_strategy="epoch",
-    save_total_limit=2,
-    report_to="none",
-    disable_tqdm=True,         
+    report_to="none"
 )
 
+def compute_metrics(pred):
+    labels = pred.label_ids
+    preds = np.argmax(pred.predictions, axis=1)
+    acc = accuracy_score(labels, preds)
+    f1 = f1_score(labels, preds, average='weighted')
+    return {"accuracy": acc, "f1": f1}
 
 trainer = Trainer(
     model=model,
@@ -80,17 +69,7 @@ trainer = Trainer(
     eval_dataset=test_dataset,
     tokenizer=tokenizer,
     data_collator=data_collator,
-    compute_metrics=compute_metrics,
-    callbacks=[EarlyStoppingCallback(early_stopping_patience=2)]
+    compute_metrics=compute_metrics
 )
 
-
 trainer.train()
-
-results = trainer.evaluate()
-print("Final evaluation metrics:", results)
-
-
-save_path = "/content/drive/MyDrive/parsbert400_emotion"
-trainer.save_model(save_path)
-tokenizer.save_pretrained(save_path)
