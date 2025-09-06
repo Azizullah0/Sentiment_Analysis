@@ -18,12 +18,12 @@ print(f"Loading data from: {PATHS['labeled_data']}")
 df = pd.read_csv(PATHS["labeled_data"])
 print(f"Columns in CSV: {df.columns.tolist()}")
 
-# Convert text labels to numeric IDs - FIXED "Suprise" to match your data
+# Convert text labels to numeric IDs
 label_mapping = {
     "Hope": 0,
     "Happy": 1, 
     "Neutral": 2,
-    "Suprise": 3,    # Changed from "Surprise" to "Suprise"
+    "Suprise": 3,
     "Disgust": 4,
     "Sad": 5,
     "Anger": 6,
@@ -37,7 +37,7 @@ print(f"Number of NaN values in labels: {df['labels'].isna().sum()}")
 if df['labels'].isna().sum() > 0:
     print("Rows with NaN labels:")
     print(df[df['labels'].isna()]['Label '].value_counts())
-    df = df.dropna(subset=['labels'])  # Remove rows with NaN labels
+    df = df.dropna(subset=['labels'])
 
 print(f"Label distribution:\n{df['Label '].value_counts()}")
 print(f"Numeric labels:\n{df['labels'].value_counts().sort_index()}")
@@ -52,7 +52,16 @@ test_dataset = Dataset.from_pandas(test_df[['clean', 'labels']])
 
 model_name = "HooshvareLab/bert-base-parsbert-uncased"
 tokenizer = AutoTokenizer.from_pretrained(model_name)
-model = AutoModelForSequenceClassification.from_pretrained(model_name, num_labels=8)
+
+# CRITICAL FIX: Ensure labels are integers, not floats
+train_dataset = train_dataset.map(lambda x: {'labels': int(x['labels'])})
+test_dataset = test_dataset.map(lambda x: {'labels': int(x['labels'])})
+
+model = AutoModelForSequenceClassification.from_pretrained(
+    model_name, 
+    num_labels=8,
+    problem_type="single_label_classification"  # Explicitly set for single-label
+)
 
 def tokenize(batch):
     return tokenizer(
