@@ -21,7 +21,7 @@ label_mapping = {
 id2label = {v: k for k, v in label_mapping.items()}
 
 # Model path (should be the same as your trained model directory)
-model_path = "/content/drive/MyDrive/parsbert_emotion"
+model_path = "/content/drive/MyDrive/Sentiment_Analysis/Models/fine_tuned_model_20250906_1241"
 
 # Load tokenizer and model
 tokenizer = AutoTokenizer.from_pretrained(model_path)
