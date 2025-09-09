@@ -3,7 +3,7 @@ import torch
 import warnings
 import os
 from transformers import AutoTokenizer, AutoModelForSequenceClassification, pipeline
-from config.paths import PATHS  # <--- use your paths config
+from config.paths import PATHS, MODEL_CONFIG
 import sys
 
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
@@ -16,6 +16,8 @@ warnings.filterwarnings("ignore", category=FutureWarning)
 # -----------------------------
 # Load final fine-tuned model
 
+
+# Load final fine-tuned model
 model_path = PATHS["finetuned_model"]
 tokenizer = AutoTokenizer.from_pretrained(model_path, local_files_only=True)
 model = AutoModelForSequenceClassification.from_pretrained(model_path, local_files_only=True)
@@ -24,6 +26,7 @@ model = AutoModelForSequenceClassification.from_pretrained(model_path, local_fil
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model.to(device)
 model.eval()
+
 # -----------------------------
 # 2. Load cleaned dataset
 # -----------------------------
