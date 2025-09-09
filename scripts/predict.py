@@ -1,21 +1,27 @@
 # predict.py
+import sys
+import os
+sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
+
 import torch
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
-from config.paths import PATHS, MODEL_CONFIG
-# Define your label mapping (adjust this based on your dataset!)
+from config.paths import PATHS, MODEL_CONFIG   # ✅ now works
+
+# Label mapping (same as training)
 LABEL_MAP = {
-    0: "happy",
-    1: "sad",
-    2: "angry",
-    3: "fear",
-    4: "surprise",
-    5: "neutral"
+    0: "Hope",
+    1: "Happy",
+    2: "Neutral",
+    3: "Suprise",
+    4: "Disgust",
+    5: "Sad",
+    6: "Anger",
+    7: "Fear"
 }
 
-# ✅ Use the final fine-tuned model path (not checkpoints)
+# Load final fine-tuned model
 model_path = PATHS["finetuned_model"]
 
-# Load fine-tuned model and tokenizer
 tokenizer = AutoTokenizer.from_pretrained(model_path)
 model = AutoModelForSequenceClassification.from_pretrained(model_path)
 
