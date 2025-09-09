@@ -8,7 +8,7 @@ timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M")
 
 
 PATHS = {
-    "finetuned_model": "/content/drive/MyDrive/Sentiment_Analysis/model/parsbert_emotion",
+    "finetuned_model": "/content/drive/MyDrive/Sentiment_Analysis/Models/parsbert_emotion",
     "datasets": "/content/drive/MyDrive/Sentiment_Analysis/datasets",
     "outputs": "/content/drive/MyDrive/Sentiment_Analysis/outputs",
     "raw_data": "/content/drive/MyDrive/Sentiment_Analysis/datasets/Cleaned_Dataset.csv",
