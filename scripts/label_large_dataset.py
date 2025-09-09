@@ -4,6 +4,9 @@ import warnings
 import os
 from transformers import AutoTokenizer, AutoModelForSequenceClassification, pipeline
 from config.paths import PATHS  # <--- use your paths config
+import sys
+
+sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
 # Suppress future warnings
 warnings.filterwarnings("ignore", category=FutureWarning)
