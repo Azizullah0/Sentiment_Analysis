@@ -21,9 +21,8 @@ LABEL_MAP = {
 
 # Load final fine-tuned model
 model_path = PATHS["finetuned_model"]
-
-tokenizer = AutoTokenizer.from_pretrained(model_path)
-model = AutoModelForSequenceClassification.from_pretrained(model_path)
+tokenizer = AutoTokenizer.from_pretrained(model_path, local_files_only=True)
+model = AutoModelForSequenceClassification.from_pretrained(model_path, local_files_only=True)
 
 # Device setup
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
