@@ -18,7 +18,7 @@ print(f"Loading data from: {PATHS['labeled_data']}")
 df = pd.read_csv(PATHS["labeled_data"])
 print(f"Columns in CSV: {df.columns.tolist()}")
 
-# Convert text labels to numeric IDs
+# Label mapping
 label_mapping = {
     "Hope": 0,
     "Happy": 1, 
@@ -32,18 +32,11 @@ label_mapping = {
 
 df['labels'] = df['Label '].map(label_mapping)
 
-# Check for and remove any NaN values in labels
-print(f"Number of NaN values in labels: {df['labels'].isna().sum()}")
+# Remove NaN labels
 if df['labels'].isna().sum() > 0:
-    print("Rows with NaN labels:")
-    print(df[df['labels'].isna()]['Label '].value_counts())
     df = df.dropna(subset=['labels'])
 
-# Convert labels to integers
 df['labels'] = df['labels'].astype(int)
-
-print(f"Label distribution:\n{df['Label '].value_counts()}")
-print(f"Numeric labels:\n{df['labels'].value_counts().sort_index()}")
 
 # Use 'text' column for training
 df = df.rename(columns={'text': 'clean'})
@@ -53,6 +46,7 @@ train_df, test_df = train_test_split(df, test_size=0.2, stratify=df['labels'], r
 train_dataset = Dataset.from_pandas(train_df[['clean', 'labels']])
 test_dataset = Dataset.from_pandas(test_df[['clean', 'labels']])
 
+# Load tokenizer and model
 model_name = "HooshvareLab/bert-base-parsbert-uncased"
 tokenizer = AutoTokenizer.from_pretrained(model_name)
 
@@ -62,6 +56,7 @@ model = AutoModelForSequenceClassification.from_pretrained(
     problem_type="single_label_classification"
 )
 
+# Tokenization
 def tokenize(batch):
     return tokenizer(
         batch["clean"], 
@@ -73,7 +68,7 @@ def tokenize(batch):
 train_dataset = train_dataset.map(tokenize, batched=True)
 test_dataset = test_dataset.map(tokenize, batched=True)
 
-# Convert labels to torch.long (int64) format
+# Convert labels to torch.long
 def convert_labels_to_long(example):
     example['labels'] = torch.tensor(example['labels'], dtype=torch.long)
     return example
@@ -87,22 +82,24 @@ test_dataset.set_format("torch", columns=columns)
 
 data_collator = DataCollatorWithPadding(tokenizer=tokenizer)
 
+# Training arguments (save only final model in stable folder)
 training_args = TrainingArguments(
-    output_dir=PATHS["finetuned_model"],
+    output_dir=PATHS["base_model"],  # stable folder
     evaluation_strategy="epoch",
-    save_strategy="epoch",
+    save_strategy="no",  # no intermediate checkpoints
     learning_rate=MODEL_CONFIG["learning_rate"],
     per_device_train_batch_size=MODEL_CONFIG["batch_size"],
     per_device_eval_batch_size=MODEL_CONFIG["batch_size"],
-    num_train_epochs=3,
-    weight_decay=0.01,
+    num_train_epochs=5,
+    weight_decay=0.02,
     load_best_model_at_end=True,
     metric_for_best_model="f1",
-    logging_dir=os.path.join(PATHS["finetuned_model"], "logs"),
+    logging_dir=os.path.join(PATHS["base_model"], "logs"),
     logging_strategy="epoch",
     report_to="none"
 )
 
+# Metrics
 def compute_metrics(pred):
     labels = pred.label_ids
     preds = np.argmax(pred.predictions, axis=1)
@@ -120,6 +117,12 @@ trainer = Trainer(
     compute_metrics=compute_metrics
 )
 
+# Train
 print("Starting training...")
 trainer.train()
-print(f"Training complete! Model saved to: {PATHS['finetuned_model']}")
+print("Training complete!")
+
+# Save only final model and tokenizer in stable folder
+trainer.save_model(PATHS["base_model"])
+tokenizer.save_pretrained(PATHS["base_model"])
+print(f"Model and tokenizer fully saved to: {PATHS['base_model']}")
