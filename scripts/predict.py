@@ -1,7 +1,7 @@
 # predict.py
 import torch
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
-from path import PATHS, MODEL_CONFIG  # Import paths and configs
+from config import PATHS, MODEL_CONFIG  # Import paths and configs
 
 # Define your label mapping (adjust this based on your dataset!)
 LABEL_MAP = {
