@@ -13,9 +13,12 @@ LABEL_MAP = {
     5: "neutral"
 }
 
+# ✅ Use the final fine-tuned model path (not checkpoints)
+model_path = PATHS["finetuned_model"]
+
 # Load fine-tuned model and tokenizer
-tokenizer = AutoTokenizer.from_pretrained(PATHS["finetuned_model"])
-model = AutoModelForSequenceClassification.from_pretrained(PATHS["finetuned_model"])
+tokenizer = AutoTokenizer.from_pretrained(model_path)
+model = AutoModelForSequenceClassification.from_pretrained(model_path)
 
 # Device setup
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -43,12 +46,10 @@ def predict(texts):
         outputs = model(**inputs)
         predictions = torch.argmax(outputs.logits, dim=-1)
 
-    # Map predictions to labels
     return [LABEL_MAP[int(p)] for p in predictions.cpu().numpy()]
 
 
 if __name__ == "__main__":
-    # Example usage
     sample_texts = [
         "من امروز خیلی خوشحالم",      # I am very happy today
         "احساس ناراحتی می‌کنم",        # I feel sad
