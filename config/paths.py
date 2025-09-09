@@ -8,10 +8,11 @@ timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M")
 
 
 PATHS = {
-    "raw_data": os.path.join(BASE_PATH, "Data", "raw", "sampled_for_labeling_cleaned.csv"),
-    "labeled_data": os.path.join(BASE_PATH, "Data", "processed", "Labeled_4K.csv"),
-    "base_model": os.path.join(BASE_PATH, "Models", "parsbert_emotion"),  # <--- use this for predict
-    "finetuned_model": os.path.join(BASE_PATH, "Models", "parsbert_emotion"),  # overwrite to match
+    "finetuned_model": "/content/drive/MyDrive/Sentiment_Analysis/model/parsbert_emotion",
+    "datasets": "/content/drive/MyDrive/Sentiment_Analysis/datasets",
+    "outputs": "/content/drive/MyDrive/Sentiment_Analysis/outputs",
+    "raw_data": "/content/drive/MyDrive/Sentiment_Analysis/datasets/Cleaned_Dataset.csv",
+    "output_labeled": "/content/drive/MyDrive/Sentiment_Analysis/outputs/Labeled_400K.csv"
 }
 
 MODEL_CONFIG = {
