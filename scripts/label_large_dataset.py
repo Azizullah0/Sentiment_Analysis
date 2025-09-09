@@ -11,19 +11,15 @@ warnings.filterwarnings("ignore", category=FutureWarning)
 # -----------------------------
 # 1. Automatically pick latest fine-tuned model from PATHS
 # -----------------------------
-MODELS_DIR = PATHS["finetuned_model"].rsplit("/", 1)[0]  # parent folder
-model_folders = [
-    os.path.join(MODELS_DIR, d)
-    for d in os.listdir(MODELS_DIR)
-    if os.path.isdir(os.path.join(MODELS_DIR, d))
-]
-latest_model = max(model_folders, key=os.path.getmtime)
-print(f"✅ Using latest model: {latest_model}")
+# Load final fine-tuned model
+model_path = PATHS["finetuned_model"]
+tokenizer = AutoTokenizer.from_pretrained(model_path, local_files_only=True)
+model = AutoModelForSequenceClassification.from_pretrained(model_path, local_files_only=True)
 
-# Load model and tokenizer
-model = AutoModelForSequenceClassification.from_pretrained(latest_model, local_files_only=True)
-tokenizer = AutoTokenizer.from_pretrained(latest_model, local_files_only=True)
-
+# Device setup
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+model.to(device)
+model.eval()
 # -----------------------------
 # 2. Load cleaned dataset
 # -----------------------------
