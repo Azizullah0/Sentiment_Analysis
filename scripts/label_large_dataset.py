@@ -1,26 +1,28 @@
+# label_large_dataset.py
+
+import sys
+import os
 import pandas as pd
 import torch
 import warnings
+from transformers import AutoTokenizer, AutoModelForSequenceClassification, pipeline
 
-import torch
-from transformers import AutoTokenizer, AutoModelForSequenceClassification
-from config.paths import PATHS, MODEL_CONFIG   # ✅ now works
-
-import sys
-
+# ------------------------------------------------
+# Ensure parent folder is on sys.path BEFORE import
+# ------------------------------------------------
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
+
+from config.paths import PATHS  # now works
 
 # Suppress future warnings
 warnings.filterwarnings("ignore", category=FutureWarning)
 
-# -----------------------------
-# 1. Automatically pick latest fine-tuned model from PATHS
-# -----------------------------
-# Load final fine-tuned model
-
-
-# Load final fine-tuned model
+# ------------------------------------------------
+# 1. Load fine-tuned model from PATHS
+# ------------------------------------------------
 model_path = PATHS["finetuned_model"]
+
+print(f"✅ Loading model from: {model_path}")
 tokenizer = AutoTokenizer.from_pretrained(model_path, local_files_only=True)
 model = AutoModelForSequenceClassification.from_pretrained(model_path, local_files_only=True)
 
@@ -29,21 +31,17 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model.to(device)
 model.eval()
 
-# -----------------------------
+# ------------------------------------------------
 # 2. Load cleaned dataset
-# -----------------------------
+# ------------------------------------------------
 df = pd.read_csv(PATHS["raw_data"])
 texts = df["clean"].fillna("").astype(str).tolist()
 
-# -----------------------------
-# 3. Set device (GPU if available)
-# -----------------------------
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-model = model.to(device)
+print(f"✅ Loaded dataset with {len(texts)} rows")
 
-# -----------------------------
-# 4. Initialize pipeline
-# -----------------------------
+# ------------------------------------------------
+# 3. Initialize pipeline
+# ------------------------------------------------
 clf = pipeline(
     "text-classification",
     model=model,
@@ -51,21 +49,22 @@ clf = pipeline(
     device=0 if torch.cuda.is_available() else -1,
     truncation=True,
     max_length=512,
-    batch_size=32  # adjust based on RAM
+    batch_size=32  # adjust based on your RAM
 )
 
-# -----------------------------
-# 5. Run predictions
-# -----------------------------
+# ------------------------------------------------
+# 4. Run predictions
+# ------------------------------------------------
+print("⚡ Running predictions on dataset...")
 predictions = clf(texts)
 
-# -----------------------------
-# 6. Extract predicted labels
-# -----------------------------
+# ------------------------------------------------
+# 5. Extract predicted labels
+# ------------------------------------------------
 df["predicted_label"] = [pred["label"] for pred in predictions]
 
-# -----------------------------
-# 7. Save results
-# -----------------------------
+# ------------------------------------------------
+# 6. Save results
+# ------------------------------------------------
 df.to_csv(PATHS["output_labeled"], index=False)
 print(f"✅ Labeling completed and saved to {PATHS['output_labeled']}")
