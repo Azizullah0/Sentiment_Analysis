@@ -1,9 +1,11 @@
 import pandas as pd
 import torch
 import warnings
-import os
-from transformers import AutoTokenizer, AutoModelForSequenceClassification, pipeline
-from config.paths import PATHS, MODEL_CONFIG
+
+import torch
+from transformers import AutoTokenizer, AutoModelForSequenceClassification
+from config.paths import PATHS, MODEL_CONFIG   # ✅ now works
+
 import sys
 
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
