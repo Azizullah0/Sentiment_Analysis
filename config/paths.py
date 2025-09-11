@@ -12,7 +12,7 @@ PATHS = {
     "datasets": "/content/drive/MyDrive/Sentiment_Analysis/datasets",
     "outputs": "/content/drive/MyDrive/Sentiment_Analysis/outputs",
     "raw_data": "/content/drive/MyDrive/Sentiment_Analysis/Data/processed/Cleaned_Dataset.csv",
-    "output_labeled": "/content/drive/MyDrive/Sentiment_Analysis/outputs/Labeled_400K.csv"
+    "output_labeled": "/content/drive/MyDrive/Sentiment_Analysis/Data/processed/Labeled_400K.csv"
 }
 
 MODEL_CONFIG = {
