@@ -11,7 +11,7 @@ PATHS = {
     "finetuned_model": "/content/drive/MyDrive/Sentiment_Analysis/Models/parsbert_emotion",
     "datasets": "/content/drive/MyDrive/Sentiment_Analysis/datasets",
     "outputs": "/content/drive/MyDrive/Sentiment_Analysis/outputs",
-    "raw_data": "/content/drive/MyDrive/Sentiment_Analysis/datasets/Cleaned_Dataset.csv",
+    "raw_data": "/content/drive/MyDrive/Sentiment_Analysis/Data/processed/Cleaned_Dataset.csv",
     "output_labeled": "/content/drive/MyDrive/Sentiment_Analysis/outputs/Labeled_400K.csv"
 }
 
