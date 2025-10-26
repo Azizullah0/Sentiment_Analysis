@@ -1,22 +1,21 @@
+# config/paths.py
 import os
-import datetime
 
-# Simple path configuration - no drive mounting here
 BASE_PATH = '/content/drive/MyDrive/Sentiment_Analysis'
 
-timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M")
-
-
 PATHS = {
-    "finetuned_model": "/content/drive/MyDrive/Sentiment_Analysis/Models/parsbert_emotion",
+    "base_model": "HooshvareLab/bert-base-parsbert-uncased",
+    "parsbert_emotion": "/content/drive/MyDrive/Sentiment_Analysis/Models/parsbert_emotion",  # Your 4K model
+    "incremental_finetuned_model": "/content/drive/MyDrive/Sentiment_Analysis/Models/parsbert_incremental_400k",
+    "Labeled_400K_with_emotions": "/content/drive/MyDrive/Sentiment_Analysis/Data/processed/Labeled_400K_with_emotions.csv",
+    "augmented_data": "/content/drive/MyDrive/Sentiment_Analysis/Data/processed/fear_augmented.csv",
     "datasets": "/content/drive/MyDrive/Sentiment_Analysis/datasets",
     "outputs": "/content/drive/MyDrive/Sentiment_Analysis/outputs",
-    "raw_data": "/content/drive/MyDrive/Sentiment_Analysis/Data/processed/Cleaned_Dataset.csv",
-    "output_labeled": "/content/drive/MyDrive/Sentiment_Analysis/Data/processed/Labeled_400K.csv"
 }
 
 MODEL_CONFIG = {
     "max_length": 512,
     "batch_size": 16,
-    "learning_rate": 2e-5,
+    "learning_rate": 2e-5,  # Base LR, we use lower for incremental
+    "num_train_epochs": 5,
 }
