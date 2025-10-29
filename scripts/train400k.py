@@ -32,8 +32,8 @@ from datasets import Dataset
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 from config.paths import PATHS, MODEL_CONFIG
 # Force the correct path
-PATHS["Labeled_400K_with_emotions"] = "/content/drive/MyDrive/Sentiment_Analysis/Data/processed/Labeled_400K_with_emotions.csv"
-print(f"🔄 Overriding path to: {PATHS['Labeled_400K_with_emotions']}")
+PATHS["Combined_Labeled_Dataset"] = "/content/drive/MyDrive/Sentiment_Analysis/Data/processed/Combined_Labeled_Dataset.csv"
+print(f"🔄 Overriding path to: {PATHS['Combined_Labeled_Dataset']}")
 # Custom Trainer with class weights
 class WeightedTrainer(Trainer):
     def __init__(self, class_weights=None, **kwargs):
@@ -175,7 +175,7 @@ def main():
         # 1. Load and Validate Dataset
         # ================================
         print("\n📁 Loading new dataset for incremental training...")
-        file_path = PATHS["Labeled_400K_with_emotions"]
+        file_path = PATHS["Combined_Labeled_Dataset"]
         
         if not os.path.exists(file_path):
             raise FileNotFoundError(f"Dataset file not found: {file_path}")
