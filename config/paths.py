@@ -7,7 +7,7 @@ PATHS = {
     "base_model": "HooshvareLab/bert-base-parsbert-uncased",
     "parsbert_emotion": "/content/drive/MyDrive/Sentiment_Analysis/Models/parsbert_emotion",  # Your 4K model
     "incremental_finetuned_model": "/content/drive/MyDrive/Sentiment_Analysis/Models/parsbert_incremental_400k",
-    "Labeled_400K_with_emotions": "/content/drive/MyDrive/Sentiment_Analysis/Data/processed/Labeled_400K_with_emotions.csv",
+    "Labeled_400K_with_emotions": "/content/drive/MyDrive/Sentiment_Analysis/Data/processed/Combined_Labeled_Dataset.csv",
     "augmented_data": "/content/drive/MyDrive/Sentiment_Analysis/Data/processed/fear_augmented.csv",
     "datasets": "/content/drive/MyDrive/Sentiment_Analysis/datasets",
     "outputs": "/content/drive/MyDrive/Sentiment_Analysis/outputs",
