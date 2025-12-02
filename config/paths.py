@@ -6,7 +6,7 @@ BASE_PATH = '/content/drive/MyDrive/Sentiment_Analysis'
 PATHS = {
     "base_model": "HooshvareLab/bert-base-parsbert-uncased",
     "parsbert_emotion": "/content/drive/MyDrive/Sentiment_Analysis/Models/parsbert_emotion",  # Your 4K model
-    "incremental_finetuned_model": "/content/drive/MyDrive/Sentiment_Analysis/outputs/incremental_imbalanced_20251029_1321",
+    "incremental_finetuned_model": "/content/drive/MyDrive/Sentiment_Analysis/outputs/incremental_imbalanced_20251029_1321/checkpoint-58752",
     "Combined_Labeled_Dataset": "/content/drive/MyDrive/Sentiment_Analysis/Data/processed/Combined_Labeled_Dataset.csv",
     "augmented_data": "/content/drive/MyDrive/Sentiment_Analysis/Data/processed/fear_augmented.csv",
     "datasets": "/content/drive/MyDrive/Sentiment_Analysis/datasets",
