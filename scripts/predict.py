@@ -23,12 +23,7 @@ LABEL_MAP = {
 
 class EmotionPredictor:
     def __init__(self, model_path=None):
-        """
-        Initialize the emotion predictor with fine-tuned model.
-        
-        Args:
-            model_path: Path to fine-tuned model. If None, uses PATHS["incremental_finetuned_model"]
-        """
+      
         self.model_path = model_path or PATHS["incremental_finetuned_model"]
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.load_model()
@@ -54,16 +49,7 @@ class EmotionPredictor:
             raise
     
     def predict(self, texts, return_probabilities=False):
-        """
-        Predict emotion labels for given Persian/Dari texts.
-        
-        Args:
-            texts (str or list): Input text or list of texts
-            return_probabilities (bool): Whether to return confidence scores
-            
-        Returns:
-            dict or list: Predictions with emotions and optionally probabilities
-        """
+      
         # Handle single text input
         if isinstance(texts, str):
             texts = [texts]
@@ -105,17 +91,7 @@ class EmotionPredictor:
             return pred_labels if len(pred_labels) > 1 else pred_labels[0]
     
     def predict_batch(self, texts, batch_size=32, return_probabilities=False):
-        """
-        Predict emotions for large batches of texts.
-        
-        Args:
-            texts (list): List of input texts
-            batch_size (int): Batch size for processing
-            return_probabilities (bool): Whether to return confidence scores
-            
-        Returns:
-            list: List of predictions
-        """
+       
         all_predictions = []
         
         for i in range(0, len(texts), batch_size):
@@ -139,31 +115,12 @@ def get_predictor():
     return _predictor
 
 def predict(texts, return_probabilities=False):
-    """
-    Convenience function for quick predictions.
-    
-    Args:
-        texts (str or list): Input text(s)
-        return_probabilities (bool): Whether to return confidence scores
-        
-    Returns:
-        Predictions in requested format
-    """
+
     predictor = get_predictor()
     return predictor.predict(texts, return_probabilities)
 
 def predict_batch(texts, batch_size=32, return_probabilities=False):
-    """
-    Convenience function for batch predictions.
-    
-    Args:
-        texts (list): List of input texts
-        batch_size (int): Batch size for processing
-        return_probabilities (bool): Whether to return confidence scores
-        
-    Returns:
-        list: List of predictions
-    """
+   
     predictor = get_predictor()
     return predictor.predict_batch(texts, batch_size, return_probabilities)
 
