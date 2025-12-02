@@ -22,7 +22,7 @@ try:
     print(f"   Found {len(fear_samples)} fear samples")
     print(f"   Total samples: {len(df)}")
     
-    # Show examples
+    
     print("\n   Example fear cleans:")
     for i, clean in enumerate(fear_samples['clean'].head(3).tolist(), 1):
         print(f"   {i}. {clean[:50]}...")
