@@ -15,7 +15,7 @@ print("=" * 60)
 print("\n📥 STEP 1: Loading your data...")
 try:
     # UPDATE THIS PATH to your actual data
-    data_path = "/content/drive/MyDrive/Sentiment_Analysis/data/your_dataset.csv"
+    data_path = "/content/drive/MyDrive/Sentiment_Analysis/Data/processed/Combined_Labeled_Dataset.csv"
     df = pd.read_csv(data_path, encoding='utf-8')
     
     fear_samples = df[df['label'] == 'Fear']
