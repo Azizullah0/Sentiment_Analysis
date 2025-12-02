@@ -1,12 +1,10 @@
-# train.py - Incremental Fine-tuning with Current Data
+
 import sys
 import os
 import logging
 import warnings
 import datetime
 import json
-
-# Configure logging and suppress warnings
 logging.basicConfig(level=logging.WARNING)
 warnings.filterwarnings("ignore", category=FutureWarning)
 os.environ["TRANSFORMERS_VERBOSITY"] = "error"
@@ -33,7 +31,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 from config.paths import PATHS, MODEL_CONFIG
 # Force the correct path
 PATHS["Combined_Labeled_Dataset"] = "/content/drive/MyDrive/Sentiment_Analysis/Data/processed/Combined_Labeled_Dataset.csv"
-print(f"🔄 Overriding path to: {PATHS['Combined_Labeled_Dataset']}")
+print(f"Overriding path to: {PATHS['Combined_Labeled_Dataset']}")
 # Custom Trainer with class weights
 class WeightedTrainer(Trainer):
     def __init__(self, class_weights=None, **kwargs):
@@ -54,7 +52,6 @@ class WeightedTrainer(Trainer):
         return (loss, outputs) if return_outputs else loss
 
 def tokenize_function(examples, tokenizer):
-    """Tokenize function with proper error handling"""
     try:
         # Validate input
         if 'clean' not in examples or 'label_id' not in examples:
@@ -100,7 +97,7 @@ def compute_metrics(p):
 
 def validate_dataset(df):
     """Validate dataset quality and integrity"""
-    print("🔍 Validating dataset...")
+    print("Validating dataset...")
     
     # Check for required columns
     required_columns = ['clean', 'label_id']
@@ -122,14 +119,14 @@ def validate_dataset(df):
     print(f"Unique labels: {sorted(df['label_id'].unique())}")
     invalid_labels = df[~df['label_id'].between(0, 7)]
     if not invalid_labels.empty:
-        print(f"⚠️ Found {len(invalid_labels)} rows with invalid labels. Removing them.")
+        print(f" Found {len(invalid_labels)} rows with invalid labels. Removing them.")
         df = df[df['label_id'].between(0, 7)]
     
     return df
 
 def analyze_class_imbalance(df):
     """Analyze and report class imbalance"""
-    print("\n📊 ANALYZING CLASS IMBALANCE")
+    print("\n ANALYZING CLASS IMBALANCE")
     print("=" * 40)
     
     label_counts = df['label_id'].value_counts().sort_index()
@@ -157,7 +154,7 @@ def analyze_class_imbalance(df):
     min_count = label_counts.min()
     imbalance_ratio = max_count / min_count
     
-    print(f"\n📈 Imbalance Analysis:")
+    print(f"\nImbalance Analysis:")
     print(f"  Majority class: {max_count} samples")
     print(f"  Minority class: {min_count} samples") 
     print(f"  Imbalance ratio: {imbalance_ratio:.1f}:1")
@@ -167,33 +164,32 @@ def analyze_class_imbalance(df):
 def main():
     """Main training function for incremental fine-tuning"""
     try:
-        print("🚀 Starting Incremental Fine-tuning on Persian/Dari Dataset")
-        print("📈 Continuing from previously fine-tuned model (4K dataset)")
+        print(" Starting Incremental Fine-tuning on Persian/Dari Dataset")
+        print(" Continuing from previously fine-tuned model (4K dataset)")
         print(f"Timestamp: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
         
-        # ================================
+      
         # 1. Load and Validate Dataset
-        # ================================
-        print("\n📁 Loading new dataset for incremental training...")
+      
+        print("\n Loading new dataset for incremental training...")
         file_path = PATHS["Combined_Labeled_Dataset"]
         
         if not os.path.exists(file_path):
             raise FileNotFoundError(f"Dataset file not found: {file_path}")
             
         df = pd.read_csv(file_path)
-        print(f"✅ New dataset loaded: {len(df)} rows")
+        print(f" New dataset loaded: {len(df)} rows")
         
         # Validate dataset
         df = validate_dataset(df)
         
         # Analyze class imbalance
         label_counts = analyze_class_imbalance(df)
-        print(f"📊 Final training dataset size: {len(df)} rows")
-        
-        # ================================
+        print(f" Final training dataset size: {len(df)} rows")
+     
         # 2. Train-Test Split (Stratified)
-        # ================================
-        print("\n🎯 Splitting dataset with stratification...")
+     
+        print("\n Splitting dataset with stratification...")
         train_df, test_df = train_test_split(
             df, 
             test_size=0.2, 
@@ -204,16 +200,16 @@ def main():
         print(f"Train samples: {len(train_df)}")
         print(f"Test samples: {len(test_df)}")
         
-        # ================================
+       
         # 3. Load Previously Fine-tuned Model & Tokenizer
-        # ================================
-        print("\n🔤 Loading previously fine-tuned model and tokenizer...")
+      
+        print("\n Loading previously fine-tuned model and tokenizer...")
         
         # Load from your previously fine-tuned model directory
         previous_model_path = PATHS["parsbert_emotion"]
         tokenizer = AutoTokenizer.from_pretrained(previous_model_path)
         
-        print(f"🤖 Loading model from: {previous_model_path}")
+        print(f" Loading model from: {previous_model_path}")
         model = AutoModelForSequenceClassification.from_pretrained(
             previous_model_path,
             num_labels=8  # Same number of labels as before
@@ -224,10 +220,10 @@ def main():
         model.to(device)
         print(f"Using device: {device}")
         
-        # ================================
+        
         # 4. Tokenization
-        # ================================
-        print("\n🔤 Tokenizing dataset...")
+     
+        print("\n Tokenizing dataset...")
         
         # Convert to Hugging Face datasets
         train_dataset = Dataset.from_pandas(train_df[['clean', 'label_id']])
@@ -251,10 +247,10 @@ def main():
         tokenized_train.set_format("torch")
         tokenized_test.set_format("torch")
         
-        # ================================
+      
         # 5. Class Weight Calculation for Imbalance
-        # ================================
-        print("\n⚖️ Calculating class weights for imbalance handling...")
+      
+        print("\n Calculating class weights for imbalance handling...")
         total = sum(label_counts.values)
         weights = [total / count for count in label_counts.values]
         weights_tensor = torch.tensor(weights, dtype=torch.float).to(device)
@@ -266,10 +262,10 @@ def main():
             label_name = label_names.get(label_id, f"Label_{label_id}")
             print(f"  {label_name}: {weight:.2f}x")
         
-        # ================================
+        
         # 6. Training Setup - Adjusted for Imbalance
-        # ================================
-        print("\n🎯 Configuring training for imbalanced dataset...")
+      
+        print("\n Configuring training for imbalanced dataset...")
         
         # Create output directory with timestamp
         timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M")
@@ -300,9 +296,9 @@ def main():
         
         data_collator = DataCollatorWithPadding(tokenizer=tokenizer)
         
-        # ================================
+     
         # 7. Initialize Trainer with Class Weights
-        # ================================
+       
         trainer = WeightedTrainer(
             model=model,
             args=training_args,
@@ -315,18 +311,18 @@ def main():
             callbacks=[EarlyStoppingCallback(early_stopping_patience=3)]
         )
         
-        # ================================
+   
         # 8. Train Model
-        # ================================
-        print("\n🎯 Starting training with class weights...")
-        print("💡 Using class weights to handle imbalance")
-        print("💡 Monitoring macro F1 score for better imbalance evaluation")
+        
+        print("\n Starting training with class weights...")
+        print(" Using class weights to handle imbalance")
+        print(" Monitoring macro F1 score for better imbalance evaluation")
         train_result = trainer.train()
         
-        # ================================
+       
         # 9. Comprehensive Evaluation
-        # ================================
-        print("\n📊 Comprehensive evaluation...")
+       
+        print("\n Comprehensive evaluation...")
         evaluation_results = trainer.evaluate()
         
         # Per-class evaluation
@@ -344,7 +340,7 @@ def main():
         print(f"Recall:          {evaluation_results['eval_recall']:.4f}")
         
         # Per-class metrics
-        print(f"\n📋 Per-class F1 Scores:")
+        print(f"\n Per-class F1 Scores:")
         per_class_f1 = f1_score(labels, preds, average=None)
         label_names = {0: "Hope", 1: "Happy", 2: "Neutral", 3: "Suprise", 
                       4: "Disgust", 5: "Sad", 6: "Anger", 7: "Fear"}
@@ -352,11 +348,11 @@ def main():
             label_name = label_names.get(i, f"Label_{i}")
             print(f"  {label_name}: {f1_score:.4f}")
         
-        # ================================
+      
         # 10. Save Model and Metadata
-        # ================================
+        
         incremental_model_path = PATHS["incremental_finetuned_model"]
-        print(f"\n💾 Saving model to {incremental_model_path}...")
+        print(f"\n Saving model to {incremental_model_path}...")
         trainer.save_model(incremental_model_path)
         tokenizer.save_pretrained(incremental_model_path)
         
@@ -384,13 +380,13 @@ def main():
         with open(os.path.join(incremental_model_path, "training_metadata.json"), "w") as f:
             json.dump(metadata, f, indent=2)
         
-        print("✅ Training completed successfully!")
-        print(f"📁 Model saved: {incremental_model_path}")
-        print(f"🎯 Key metric - F1 Macro: {evaluation_results['eval_f1_macro']:.4f}")
-        print(f"⚠️  Note: Severe class imbalance detected (Fear: {label_counts[7]} samples)")
+        print(" Training completed successfully!")
+        print(f" Model saved: {incremental_model_path}")
+        print(f" Key metric - F1 Macro: {evaluation_results['eval_f1_macro']:.4f}")
+        print(f"  Note: Severe class imbalance detected (Fear: {label_counts[7]} samples)")
         
     except Exception as e:
-        print(f"❌ Training failed: {e}")
+        print(f" Training failed: {e}")
         raise
 
 if __name__ == "__main__":
