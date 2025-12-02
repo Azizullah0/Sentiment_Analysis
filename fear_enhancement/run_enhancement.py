@@ -18,14 +18,14 @@ try:
     data_path = "/content/drive/MyDrive/Sentiment_Analysis/Data/processed/Combined_Labeled_Dataset.csv"
     df = pd.read_csv(data_path, encoding='utf-8')
     
-    fear_samples = df[df['label'] == 'Fear']
+    fear_samples = df[df['Label'] == 'Fear']
     print(f"   Found {len(fear_samples)} fear samples")
     print(f"   Total samples: {len(df)}")
     
     # Show examples
-    print("\n   Example fear texts:")
-    for i, text in enumerate(fear_samples['text'].head(3).tolist(), 1):
-        print(f"   {i}. {text[:50]}...")
+    print("\n   Example fear cleans:")
+    for i, clean in enumerate(fear_samples['clean'].head(3).tolist(), 1):
+        print(f"   {i}. {clean[:50]}...")
         
 except Exception as e:
     print(f"   ❌ Error: {e}")
@@ -36,18 +36,18 @@ print("\n🔄 STEP 2: Generating more fear examples...")
 from fear_augmenter import SimpleFearAugmenter
 
 augmenter = SimpleFearAugmenter()
-new_fear_texts = augmenter.generate_fear_samples(300)
+new_fear_cleans = augmenter.generate_fear_samples(300)
 
-print(f"   Generated {len(new_fear_texts)} new fear examples")
-print("\n   Sample generated texts:")
-for i, text in enumerate(new_fear_texts[:5], 1):
-    print(f"   {i}. {text}")
+print(f"   Generated {len(new_fear_cleans)} new fear examples")
+print("\n   Sample generated cleans:")
+for i, clean in enumerate(new_fear_cleans[:5], 1):
+    print(f"   {i}. {clean}")
 
 # Step 3: Save augmented data
 print("\n💾 STEP 3: Saving augmented data...")
 augmented_df = pd.DataFrame({
-    'text': new_fear_texts,
-    'label': 'Fear',
+    'clean': new_fear_cleans,
+    'Label': 'Fear',
     'source': 'augmented'
 })
 
@@ -85,7 +85,7 @@ from quick_fix import enhance_fear_detection
 print("\n   Test Results:")
 print("   " + "-" * 50)
 
-for text, expected in test_cases:
+for clean, expected in test_cases:
     # Simulate original model prediction (usually wrong for fear)
     if expected == "Fear":
         original_emotion = "Sad"  # Model often predicts Sad for fear
@@ -96,13 +96,13 @@ for text, expected in test_cases:
     
     # Apply enhancement
     new_emotion, new_conf = enhance_fear_detection(
-        text, original_emotion, original_confidence
+        clean, original_emotion, original_confidence
     )
     
     is_correct = new_emotion == expected
     status = "✅" if is_correct else "❌"
     
-    print(f"   {status} '{text[:20]}...'")
+    print(f"   {status} '{clean[:20]}...'")
     print(f"      Before: {original_emotion} ({original_confidence:.2f})")
     print(f"      After:  {new_emotion} ({new_conf:.2f})")
     print(f"      Expected: {expected}")
