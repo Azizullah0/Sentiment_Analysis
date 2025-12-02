@@ -36,7 +36,7 @@ class EmotionPredictor:
     def load_model(self):
         """Load model and tokenizer with error handling"""
         try:
-            print(f"🔍 Loading model from: {self.model_path}")
+            print(f" Loading model from: {self.model_path}")
             self.tokenizer = AutoTokenizer.from_pretrained(self.model_path, local_files_only=True)
             self.model = AutoModelForSequenceClassification.from_pretrained(
                 self.model_path, 
@@ -44,13 +44,13 @@ class EmotionPredictor:
             )
             self.model.to(self.device)
             self.model.eval()
-            print("✅ Model loaded successfully!")
+            print(" Model loaded successfully!")
             
             # Verify model configuration
-            print(f"📊 Model configured for {self.model.config.num_labels} classes")
+            print(f"Model configured for {self.model.config.num_labels} classes")
             
         except Exception as e:
-            print(f"❌ Error loading model: {e}")
+            print(f" Error loading model: {e}")
             raise
     
     def predict(self, texts, return_probabilities=False):
@@ -124,7 +124,7 @@ class EmotionPredictor:
             all_predictions.extend(batch_predictions)
             
             if i % (batch_size * 10) == 0:  # Progress indicator
-                print(f"📦 Processed {min(i + batch_size, len(texts))}/{len(texts)} texts")
+                print(f" Processed {min(i + batch_size, len(texts))}/{len(texts)} texts")
         
         return all_predictions
 
@@ -183,17 +183,18 @@ if __name__ == "__main__":
         "هوا خوب است",                        # The weather is good (Neutral)
         "نگران آینده هستم",                   # I'm worried about the future (Fear)
         "چه اتفاق غیرمنتظره ای"              # What an unexpected event (Surprise)
+        
     ]
     
-    print("🧪 Testing Emotion Prediction")
+    print(" Testing Emotion Prediction")
     print("=" * 50)
     
     # Test with confidence scores
     predictions = predictor.predict(sample_texts, return_probabilities=True)
     
     for result in predictions:
-        print(f"📝: {result['text']}")
-        print(f"🎭: {result['emotion']} (Confidence: {result['confidence']:.3f})")
+        print(f": {result['text']}")
+        print(f": {result['emotion']} (Confidence: {result['confidence']:.3f})")
         
         # Show top 3 emotions by probability
         top_emotions = sorted(
@@ -202,11 +203,11 @@ if __name__ == "__main__":
             reverse=True
         )[:3]
         
-        print("📊 Top 3:", ", ".join([f"{e}({p:.3f})" for e, p in top_emotions]))
+        print(" Top 3:", ", ".join([f"{e}({p:.3f})" for e, p in top_emotions]))
         print("-" * 40)
     
     # Quick test without probabilities
-    print("\n🚀 Quick predictions (without probabilities):")
+    print("\n Quick predictions (without probabilities):")
     quick_preds = predictor.predict(sample_texts[:3])
     for text, emotion in zip(sample_texts[:3], quick_preds):
         print(f"  '{text}' → {emotion}")
