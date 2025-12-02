@@ -182,8 +182,9 @@ if __name__ == "__main__":
         "این خبر مرا عصبانی کرد",             # This news made me angry
         "هوا خوب است",                        # The weather is good (Neutral)
         "نگران آینده هستم",                   # I'm worried about the future (Fear)
-        "چه اتفاق غیرمنتظره ای"              # What an unexpected event (Surprise)
-        
+        "چه اتفاق غیرمنتظره ای" ،            # What an unexpected event (Surprise)
+        "بد  نکن"،
+        "رهایم کن"
     ]
     
     print(" Testing Emotion Prediction")
