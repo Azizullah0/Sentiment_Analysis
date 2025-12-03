@@ -195,7 +195,7 @@ def main():
     
     output_df.to_csv(output_path_csv, index=False, encoding='utf-8')
     
-)
+
     
     print(f"\n Saved to:")
     print(f"   CSV: {output_path_csv}")
