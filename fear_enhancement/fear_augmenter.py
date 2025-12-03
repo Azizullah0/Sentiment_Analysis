@@ -190,19 +190,16 @@ def main():
     })
     
     # Save in multiple formats
-    output_path_csv = "/content/augmented_afghan_fear_3500.csv"
+    output_path_csv = "/content/drive/MyDrive/Sentiment_Analysis/Data/processed/augmented_afghan_fear_3500.csv"
     output_path_txt = "/content/augmented_afghan_fear_samples.txt"
     
     output_df.to_csv(output_path_csv, index=False, encoding='utf-8')
     
-    # Also save as text file for easy viewing
-    with open(output_path_txt, 'w', encoding='utf-8') as f:
-        for i, sample in enumerate(samples[:100], 1):  # Save first 100 for review
-            f.write(f"{i:3d}. {sample}\n")
+)
     
     print(f"\n Saved to:")
     print(f"   CSV: {output_path_csv}")
-    print(f"   TXT (sample): {output_path_txt}")
+  
     
     # Show statistics
     print(f"\n Sample Statistics:")
