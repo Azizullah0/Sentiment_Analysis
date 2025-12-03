@@ -24,7 +24,7 @@ LABEL_MAP = {
 class EmotionPredictor:
     def __init__(self, model_path=None):
         # Use new trained model path or default
-        self.model_path = model_path or PATHS["/content/drive/MyDrive/Sentiment_Analysis/outputs/incremental_imbalanced_20251203_1541/checkpoint-40068"]
+        self.model_path = model_path or PATHS[incremental_finetuned_model"]
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.load_model()
 
@@ -109,7 +109,7 @@ def predict_batch(texts, batch_size=32, return_probabilities=False):
 
 # Test script
 if __name__ == "__main__":
-    predictor = EmotionPredictor(model_path=PATHS["/content/drive/MyDrive/Sentiment_Analysis/outputs/incremental_imbalanced_20251203_1541/checkpoint-40068"])
+    predictor = EmotionPredictor(model_path=PATHS["incremental_finetuned_model"])
     
     sample_texts = [
         "من امروز خیلی خوشحالم",
