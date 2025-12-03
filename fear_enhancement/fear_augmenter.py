@@ -1,11 +1,12 @@
-# fear_augmentation.py
-import pandas as pd
+# fear_augmenter.py - CLEAN VERSION
 import random
 from typing import List
 
 class FearDataAugmenter:
+    """Simple fear data augmentation"""
+    
     def __init__(self):
-        # Dari fear expressions and patterns
+        # Dari fear expressions
         self.fear_templates = [
             "می‌ترسم که {trigger}",
             "نگران {trigger} هستم",
@@ -13,88 +14,47 @@ class FearDataAugmenter:
             "دلهره {trigger} را دارم",
             "وحشت از {trigger} مرا گرفته",
             "ترس از {trigger} آزارم می‌دهد",
-            "اضطراب {trigger} مرا اذیت می‌کند",
-            "دلم برای {trigger} شور می‌زند",
-            "از {trigger} می‌لرزم",
-            "هراسان از {trigger}",
-            "نگرانی {trigger} خوابم را برده",
-            "ترس {trigger} وجودم را فرا گرفته",
-            "دچار ترس {trigger} شده‌ام",
-            "از {trigger} به خود می‌لرزم",
-            "وحشت {trigger} مرا فراگرفته"
+            "اضطراب {trigger} مرا اذیت می‌کند"
         ]
         
         self.fear_triggers = [
             "آینده", "امتحان", "تاریکی", "تنهایی", "مرگ",
             "بیماری", "فقر", "جنگ", "سقوط", "گم شدن",
-            "شکست", "طرد شدن", "بلایای طبیعی", "تصادف",
-            "از دست دادن", "ناشناخته", "ارتفاع", "حیوانات",
-            "توفان", "زلزله", "سیل", "آتش", "دزد",
-            "پلیس", "دولت", "قضاوت دیگران", "شکست عاطفی"
-        ]
-        
-        self.fear_adjectives = [
-            "وحشت‌ناک", "هراس‌انگیز", "ترسناک", "دلهره‌آور",
-            "مخوف", "هولناک", "مهیب", "مرگبار", "مخاطره‌آمیز"
+            "شکست", "طرد شدن", "بلایای طبیعی"
         ]
     
-    def augment_fear_samples(self, existing_fear_texts: List[str], target_count: int = 1000):
-        """Generate augmented fear samples"""
-        augmented = []
+    def generate_fear_samples(self, n_samples: int = 500) -> List[str]:
+        """Generate new fear samples"""
+        samples = []
         
-        # 1. Template-based generation
-        for _ in range(target_count // 2):
+        for _ in range(n_samples):
             template = random.choice(self.fear_templates)
             trigger = random.choice(self.fear_triggers)
             text = template.format(trigger=trigger)
-            
-            # Add variation
-            if random.random() > 0.7:
-                adj = random.choice(self.fear_adjectives)
-                text = text.replace(trigger, f"{adj} {trigger}")
-            
-            augmented.append(text)
+            samples.append(text)
         
-        # 2. Paraphrase existing samples
-        for text in existing_fear_texts[:min(100, len(existing_fear_texts))]:
-            for _ in range(5):  # 5 variations per sample
-                paraphrased = self.paraphrase_fear(text)
-                augmented.append(paraphrased)
-        
-        # 3. Mix with context (makes it more realistic)
-        context_templates = [
-            "دیشب خواب دیدم که {fear}",
-            "همیشه فکر می‌کنم که {fear}",
-            "نمی‌توانم جلوی فکر کردن به {fear} را بگیرم",
-            "از بچگی {fear}",
-            "این روزها مدام {fear}",
-            "دلم می‌خواهد با کسی در مورد {fear} صحبت کنم"
-        ]
-        
-        for _ in range(target_count // 4):
-            context = random.choice(context_templates)
-            fear_text = random.choice(augmented[:50])
-            augmented.append(context.format(fear=fear_text))
-        
-        return list(set(augmented))[:target_count]
+        return samples
     
-    def paraphrase_fear(self, text: str) -> str:
-        """Create paraphrases of fear expressions"""
-        replacements = {
-            "می‌ترسم": ["هراس دارم", "وحشت دارم", "دچار ترس شده‌ام"],
-            "نگران": ["مضطرب", "دلهره‌دار", "پریشان"],
-            "هراس": ["وحشت", "ترس", "دلهره"],
-            "اضطراب": ["نگرانی", "تشویش", "بی‌قراری"]
-        }
+    def augment_existing_fear(self, existing_texts: List[str], n_samples: int = 300) -> List[str]:
+        """Augment existing fear samples with variations"""
+        augmented = []
         
-        for orig, alts in replacements.items():
-            if orig in text and random.random() > 0.5:
-                text = text.replace(orig, random.choice(alts))
+        for text in existing_texts[:50]:  # Use first 50 samples
+            # Simple variations
+            variations = [
+                text,
+                text + " و نمی‌دانم چه کنم",
+                "همیشه " + text,
+                "این روزها " + text,
+                text.replace("می‌ترسم", "هراس دارم"),
+                text.replace("نگران", "مضطرب"),
+            ]
+            augmented.extend(variations)
         
-        return text
+        # Add some completely new samples
+        augmented.extend(self.generate_fear_samples(n_samples // 2))
+        
+        return list(set(augmented))[:n_samples]
 
-# Usage
-augmenter = FearDataAugmenter()
-# Get existing fear samples from your dataset
-fear_samples = df[df['label'] == 'Fear']['text'].tolist()
-augmented_fear = augmenter.augment_fear_samples(fear_samples, target_count=2000)
+# === NO CODE OUTSIDE THE CLASS ===
+# This file should ONLY contain the class definition
