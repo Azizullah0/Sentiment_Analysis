@@ -175,7 +175,7 @@ def main():
     print("   • 10% Social fears (فقر، بیماری، تحصیل)")
     print("   • 10% Future fears (آینده، کودکان، وطن)")
     
-    samples = augmenter.generate_batch(3500)  # Generate 3500 to get ~3000 unique
+    samples = augmenter.generate_batch(9000)  # Generate 3500 to get ~3000 unique
     
     print(f"\n Generated {len(samples)} unique fear samples")
     
