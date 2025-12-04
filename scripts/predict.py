@@ -5,7 +5,7 @@ import numpy as np
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
 
 # --- FIXED MODEL PATH ---
-MODEL_PATH = r"/content/drive/MyDrive/Sentiment_Analysis/outputs/incremental_imbalanced_20251203_1541/checkpoint-40068"
+MODEL_PATH = r"/content/drive/MyDrive/Sentiment_Analysis/outputs/incremental_imbalanced_20251029_1321/checkpoint-39168"
 
 LABEL_MAP = {
     0: "Hope",
