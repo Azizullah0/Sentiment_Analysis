@@ -165,6 +165,7 @@ def main():
         report_to="none",
         fp16=True,
         logging_steps=50,
+        logging_first_step=True,
         save_total_limit=1,  # keep only the best checkpoint
         push_to_hub=False,
         warmup_steps=100,
@@ -183,6 +184,8 @@ def main():
         callbacks=[EarlyStoppingCallback(early_stopping_patience=3)],
     )
 
+    trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
+    print(f"\ntrainable parameters: {trainable_params}")
     print(f"\ntrain batches: {len(trainer.get_train_dataloader())}")
     print("\nStarting 7-label training...")
     trainer.train()
