@@ -16,6 +16,7 @@ LABEL_MAP = {
     4: "Disgust",
     5: "Sad",
     6: "Anger",
+    7: "ّFear"
 }
 
 
