@@ -150,7 +150,7 @@ def main():
     os.makedirs(output_dir, exist_ok=True)
 
     args = TrainingArguments(
-        output_dir=output_dir,
+     output_dir=output_dir,
         evaluation_strategy="epoch",
         save_strategy="epoch",
         learning_rate=1e-5,
@@ -167,7 +167,7 @@ def main():
         save_total_limit=1,  # keep only the best checkpoint
         push_to_hub=False,
         warmup_steps=100,
-        dataloader_drop_last=True,
+        dataloader_drop_last=False,
     )
 
     trainer = WeightedTrainer(
@@ -181,8 +181,10 @@ def main():
         class_weights=weights_tensor,
         callbacks=[EarlyStoppingCallback(early_stopping_patience=3)],
     )
-
+    trainer = WeightedTrainer(...)
+    print(f"\ntrain batches: {len(trainer.get_train_dataloader())}")
     print("\nStarting 7-label training...")
+   
     trainer.train()
 
     print("\nEvaluating...")
