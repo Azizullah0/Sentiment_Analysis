@@ -54,13 +54,13 @@ class WeightedTrainer(Trainer):
 def tokenize_function(examples, tokenizer):
     try:
         # Validate input
-        if 'cleam' not in examples or 'label_id' not in examples:
-            missing = [k for k in ['cleam', 'label_id'] if k not in examples]
+        if 'clean' not in examples or 'label_id' not in examples:
+            missing = [k for k in ['clean', 'label_id'] if k not in examples]
             raise KeyError(f"Missing columns: {missing}")
         
         # Tokenize
         tokenized = tokenizer(
-            examples["cleam"], 
+            examples["clean"], 
             truncation=True, 
             padding="max_length", 
             max_length=MODEL_CONFIG["max_length"],
@@ -73,7 +73,7 @@ def tokenize_function(examples, tokenizer):
         
     except Exception as e:
         print(f"Tokenization error: {e}")
-        print(f"Sample data: {examples['cleam'][:2] if 'cleam' in examples else 'No cleam cleam'}")
+        print(f"Sample data: {examples['clean'][:2] if 'clean' in examples else 'No clean clean'}")
         raise
 
 def compute_metrics(p):
@@ -100,18 +100,18 @@ def validate_dataset(df):
     print("Validating dataset...")
     
     # Check for required columns
-    required_columns = ['cleam', 'label_id']
+    required_columns = ['clean', 'label_id']
     missing_columns = [col for col in required_columns if col not in df.columns]
     if missing_columns:
         raise ValueError(f"Missing required columns: {missing_columns}")
     
     # Check for NaN values
-    print(f"NaN in 'cleam': {df['cleam'].isna().sum()}")
+    print(f"NaN in 'clean': {df['clean'].isna().sum()}")
     print(f"NaN in 'label_id': {df['label_id'].isna().sum()}")
     
     # Remove rows with NaN in critical columns
     initial_size = len(df)
-    df = df.dropna(subset=['cleam', 'label_id'])
+    df = df.dropna(subset=['clean', 'label_id'])
     if initial_size - len(df) > 0:
         print(f"Removed {initial_size - len(df)} rows with NaN values")
     
@@ -226,8 +226,8 @@ def main():
         print("\n Tokenizing dataset...")
         
         # Convert to Hugging Face datasets
-        train_dataset = Dataset.from_pandas(train_df[['cleam', 'label_id']])
-        test_dataset = Dataset.from_pandas(test_df[['cleam', 'label_id']])
+        train_dataset = Dataset.from_pandas(train_df[['clean', 'label_id']])
+        test_dataset = Dataset.from_pandas(test_df[['clean', 'label_id']])
         
         # Tokenize
         tokenized_train = train_dataset.map(
@@ -240,7 +240,7 @@ def main():
         )
         
         # Remove original columns and set format
-        columns_to_remove = ["cleam", "label_id"]
+        columns_to_remove = ["clean", "label_id"]
         tokenized_train = tokenized_train.remove_columns(columns_to_remove)
         tokenized_test = tokenized_test.remove_columns(columns_to_remove)
         
