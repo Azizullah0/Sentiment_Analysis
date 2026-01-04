@@ -161,10 +161,21 @@ class AfghanFearAugmentorPro:
     # -------------------------------------------------------------
     # Generate Batch
     # -------------------------------------------------------------
-    def generate_batch(self, n=9000):
-        samples = set()
+    def _normalize_text(self, text: str) -> str:
+        # Simple canonicalization to catch near-duplicates
+        return " ".join(text.replace("،", ",").replace("  ", " ").strip().split())
 
-        while len(samples) < n:
+    def generate_batch(self, n=9000, min_chars=12):
+        """
+        Generate up to n unique fear-like samples with light normalization to avoid duplicates.
+        min_chars filters out very short artefacts.
+        """
+        samples = set()
+        attempts = 0
+        max_attempts = max(n * 50, 2000)  # cap runaway loops
+
+        while len(samples) < n and attempts < max_attempts:
+            attempts += 1
             sentence = self.generate_sentence()
 
             # Add occasional 2-sentence paragraphs
@@ -172,9 +183,36 @@ class AfghanFearAugmentorPro:
                 extra = random.choice(self.emotional_endings)
                 sentence = sentence + "، " + extra
 
-            samples.add(sentence)
+            norm = self._normalize_text(sentence)
+            if len(norm) < min_chars:
+                continue
+            samples.add(norm)
+
+        if len(samples) < n:
+            print(f"Warning: generated {len(samples)} unique samples (target {n}); increase sources or attempts if needed.")
 
         return list(samples)
+
+def to_schema(samples, channel_id="generated_fear", label="Fear", label_id=7):
+    """
+    Convert generated samples to the target schema:
+    channelId, publishedAt, clean, token_count, Label, label_id.
+    publishedAt uses current date/time; token_count is word count.
+    """
+    from datetime import datetime
+    rows = []
+    now = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
+    for s in samples:
+        token_count = len(s.split())
+        rows.append({
+            "channelId": channel_id,
+            "publishedAt": now,
+            "clean": s,
+            "token_count": token_count,
+            "Label": label,
+            "label_id": label_id
+        })
+    return rows
 
 
 # -------------------------------------------------------------
