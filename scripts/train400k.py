@@ -344,9 +344,9 @@ def main():
         per_class_f1 = f1_score(labels, preds, average=None)
         label_names = {0: "Hope", 1: "Happy", 2: "Neutral", 3: "Suprise", 
                       4: "Disgust", 5: "Sad", 6: "Anger", 7: "Fear"}
-        for i, f1_score in enumerate(per_class_f1):
+        for i, f1_cls in enumerate(per_class_f1):
             label_name = label_names.get(i, f"Label_{i}")
-            print(f"  {label_name}: {f1_score:.4f}")
+            print(f"  {label_name}: {f1_cls:.4f}")
         
       
         # 10. Save Model and Metadata
