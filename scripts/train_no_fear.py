@@ -109,8 +109,8 @@ def main():
     )
     print(f"\nTrain size: {len(train_df)} | Eval size: {len(eval_df)}")
 
-    # tokenizer/model (reinit head for 7 labels)
-    base_model_path = PATHS.get("base_model", "HooshvareLab/bert-base-parsbert-uncased")
+    # tokenizer/model (start from your prior fine-tuned checkpoint, reinit head to 7 labels)
+    base_model_path = PATHS.get("parsbert_emotion", PATHS.get("base_model", "HooshvareLab/bert-base-parsbert-uncased"))
     tokenizer = AutoTokenizer.from_pretrained(base_model_path)
     model = AutoModelForSequenceClassification.from_pretrained(
         base_model_path, num_labels=7, ignore_mismatched_sizes=True
@@ -224,3 +224,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
