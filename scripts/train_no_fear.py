@@ -35,8 +35,9 @@ from config.paths import PATHS, MODEL_CONFIG
 
 
 class WeightedTrainer(Trainer):
-    def __init__(self, class_weights=None, **kwargs):
-        super().__init__(**kwargs)
+    def __init__(self, model=None, class_weights=None, **kwargs):
+        # Ensure model is explicitly forwarded; avoids loss if kwargs manipulation happens upstream.
+        super().__init__(model=model, **kwargs)
         self.class_weights = class_weights
 
     def compute_loss(self, model, inputs, return_outputs=False):
@@ -150,7 +151,7 @@ def main():
     os.makedirs(output_dir, exist_ok=True)
 
     args = TrainingArguments(
-     output_dir=output_dir,
+        output_dir=output_dir,
         evaluation_strategy="epoch",
         save_strategy="epoch",
         learning_rate=1e-5,
@@ -181,10 +182,9 @@ def main():
         class_weights=weights_tensor,
         callbacks=[EarlyStoppingCallback(early_stopping_patience=3)],
     )
-    trainer = WeightedTrainer(...)
+
     print(f"\ntrain batches: {len(trainer.get_train_dataloader())}")
     print("\nStarting 7-label training...")
-   
     trainer.train()
 
     print("\nEvaluating...")
@@ -226,4 +226,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
