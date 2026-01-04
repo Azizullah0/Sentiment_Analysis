@@ -1,0 +1,175 @@
+\documentclass[11pt]{article}
+\usepackage[table]{xcolor}
+\usepackage{booktabs}
+\usepackage{geometry}
+\usepackage{graphicx}
+\usepackage{multirow}
+\usepackage{hyperref}
+\usepackage{enumitem}
+\usepackage{polyglossia}
+\setmainlanguage{english}
+\setotherlanguages{farsi}
+\newfontfamily\persianfont[Script=Arabic,Scale=1.1]{Amiri}
+\geometry{margin=1in}
+
+\title{Persian/Dari Emotion Classification with Incremental Fine-tuning and Fear Enhancement}
+\author{Azizullah0}
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+We study emotion classification for Persian/Dari social-media text under severe class imbalance (125:1 Happy:Fear). Starting from a 4K manually labeled seed set, we incrementally fine-tune ParsBERT to 400K weak labels with class-aware weighting and mixed precision. We add culturally informed fear augmentation (9K synthetic Dari fear expressions) and a simple rule-based post-processor to recover Fear cases often misread as Sad. The final model reaches 85.73\% accuracy and 78.43\% macro F1. We release practical notes on data collection, cleaning, and deployment in a Colab/Google Drive workflow.
+\end{abstract}
+
+\section{Introduction}
+Sentiment and emotion analysis for Persian/Dari remains under-resourced despite abundant social content. Dialectal variation, transliteration (e.g., ``Salam Khobi''), and noisy spelling impede zero-shot models. We assemble a multi-source dataset (Telegram and YouTube) across Afghan discourse, extend emotion labels with ``hope'', and incrementally fine-tune ParsBERT from 4K manually labeled data to 400K weak labels. To address extreme Fear sparsity, we inject culturally grounded augmentation and a rule-based fear enhancer. Our contributions:
+\begin{itemize}[leftmargin=*]
+    \item Curated, cleaned, and labeled Persian/Dari dataset (373K cleaned; 387K with labels; 8 emotions including hope).
+    \item Incremental fine-tuning of ParsBERT with class weights and cosine LR, reaching 85.73\% accuracy / 78.43\% macro F1.
+    \item Culturally aware fear augmentation (9K samples) plus a lightweight rule-based Fear post-fix for deployment.
+    \item Colab/Drive-friendly pipeline and reproducibility notes.
+\end{itemize}
+
+\section{Related Work}
+Transformers dominate sentiment analysis in low-resource settings; ParsBERT~\cite{farahani2021parsbert} is state-of-the-art for Persian tasks. Prior work shows class weighting and augmentation help imbalance; zero-shot multilingual models often underperform on Dari. Emotion resources such as PersianEmo inform label design but lack a ``hope'' class relevant to Afghan discourse.
+
+\section{Data Collection and Preprocessing}
+\textbf{Sources.} Manually selected Telegram groups (\(\sim\)24K messages) and YouTube channels (e.g., Kaktos, Nama Rasana, regional Afghan content) yielding: BV (17{,}963), Kaktos (198{,}511), NR (87{,}788), PeopleMedia (1{,}084), RezaFatima (181{,}514), Telegram set (24{,}192). Cleaned corpus totals 373{,}105 rows (avg \(\sim\)15.6 tokens).
+
+\textbf{Cleaning.} Removed duplicates/empty, URLs, mentions, hashtags, non-Persian chars; filtered short texts (\(<4\) words); Hazm normalization, tokenization, stopword removal; normalized spacing; handled transliteration variants.
+
+\section{Labeling Strategy}
+\textbf{Manual seed.} Proportional sample \(\sim\)4K across sources; labeled into 8 emotions: Happy, Sad, Anger, Fear, Disgust, Surprise, Neutral, Hope (numeric IDs 0--7). Zero-shot xlm-roberta-large-xnli was unreliable; fine-tuned ParsBERT used instead.
+
+\textbf{Semi-supervised.} Seed model labels remaining \(\sim\)400K cleaned data to form Combined\_Labeled\_Dataset. Schema: \texttt{clean}, \texttt{Label}, \texttt{label\_id}, plus metadata. Severe imbalance: Fear \(\approx\)0.25\% (1{,}097 of 391{,}691).
+
+\section{Model and Training}
+Base model: HooshvareLab/bert-base-parsbert-uncased.
+
+\subsection{Phase 1: 4K Seed Fine-tuning}
+Hyperparameters: epochs=3, batch=8, lr=2e-5, max\_len=256, AdamW. Results: Acc 53.89\%, F1 (weighted) 52.17\%, Val loss 1.4159, Train loss 0.8019. Established that task-specific fine-tuning beats zero-shot.
+
+\subsection{Phase 2: 400K Incremental Fine-tuning}
+Hyperparameters: lr 1e-5 cosine decay + 100 warmup, batch=16, max\_len=512, AdamW wd=0.01, weighted CrossEntropy (inverse frequency), epochs=4 with early stopping (patience 3), FP16. Hardware: Colab GPU.
+
+\section{Class Imbalance}
+Table~\ref{tab:dist} shows the 400K label distribution and weights (inverse frequency, scaled). Imbalance ratio Happy:Fear = 125.5:1.
+\begin{table}[h]
+\centering
+\caption{Label Distribution and Weights (400K set)}
+\label{tab:dist}
+\begin{tabular}{lccc}
+\toprule
+Emotion & Samples & Percentage & Class Weight \\
+\midrule
+Happy & 122{,}082 & 31.48\% & 3.18$\times$ \\
+Neutral & 82{,}170 & 21.19\% & 4.72$\times$ \\
+Sad & 74{,}621 & 19.24\% & 5.20$\times$ \\
+Hope & 35{,}778 & 9.23\% & 10.84$\times$ \\
+Disgust & 28{,}197 & 7.27\% & 13.75$\times$ \\
+Anger & 26{,}357 & 6.80\% & 14.71$\times$ \\
+Surprise & 17{,}589 & 4.54\% & 22.05$\times$ \\
+Fear & 973 & 0.25\% & 398.53$\times$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Results}
+\textbf{Training progression (phase 2).}
+\begin{table}[h]
+\centering
+\caption{Performance Across Epochs}
+\begin{tabular}{lcccc}
+\toprule
+Epoch & Accuracy & F1 Macro & F1 Weighted & Learning Rate \\
+\midrule
+1 & 81.91\% & 73.45\% & 82.10\% & 7.5e-6 \\
+2 & 83.19\% & 75.27\% & 83.37\% & 5.0e-6 \\
+3 & 85.37\% & 77.71\% & 85.42\% & 2.5e-6 \\
+4 & \textbf{85.73\%} & \textbf{78.43\%} & \textbf{85.80\%} & 1.25e-6 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{Final metrics.}
+\begin{table}[h]
+\centering
+\caption{Comprehensive Evaluation}
+\begin{tabular}{lc}
+\toprule
+Metric & Score \\
+\midrule
+Accuracy & 85.73\% \\
+F1 (Weighted) & 85.80\% \\
+F1 (Macro) & 78.43\% \\
+Precision & 85.99\% \\
+Recall & 85.73\% \\
+Validation Loss & 0.7301 \\
+Training Loss & 0.3633 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{Efficiency.} Training time 8{,}517s (\(\sim\)2.4h); throughput 145.7 samples/s (train), 478.9 samples/s (eval); FP16 improves memory and speed.
+
+\section{Error Analysis: Fear vs Sad}
+Explicit fear expressions were often misclassified as Sad. Examples:
+\begin{table}[h]
+\centering
+\caption{Fear Misclassified as Sadness}
+\begin{tabular}{lccc}
+\toprule
+Text & Predicted & Confidence & Expected \\
+\midrule
+\textRL{\textfarsi{از امتحان فردا می‌ترسم}} & Sad & 62.1\% & Fear \\
+\textRL{\textfarsi{نگران آینده هستم}} & Sad & 84.8\% & Fear \\
+\textRL{\textfarsi{دلهره مرگ مرا فرا گرفته}} & Sad & 61.3\% & Fear \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Causes: extreme minority Fear class; semantic overlap with sadness; cultural markers (war, political instability, uncertainty). Observed domains: (1) war/conflict (e.g., \textRL{\textfarsi{طالبان، داعش}} + \textRL{\textfarsi{حمله کنند}}), (2) insult-based fear, (3) social/future anxiety, (4) mild unease with emotional prefixes/endings (\textRL{\textfarsi{به خدا قسم}}, \textRL{\textfarsi{خدا رحم کنه}}).
+
+\section{Fear Augmentation and Rule-based Enhancement}
+\textbf{Generator.} 9K synthetic Dari fear samples using four modules: war/political, insult+fear, social/future anxiety, mild unease; mixes subjects, events, emotional prefixes/endings; occasional two-sentence variants; metadata includes label=Fear, language=fa, region=afghanistan, timestamp.
+
+Representative examples:
+\begin{itemize}[leftmargin=*]
+    \item \textRL{\textfarsi{به خدا قسم طالبان هر لحظه ممکن است جنگ دوباره شروع شود، خدا رحم کنه}}
+    \item \textRL{\textfarsi{لعنت به این قاتلان که هر لحظه ممکن است باز ظلم کنند}}
+    \item \textRL{\textfarsi{نگران آیندهٔ کودکان هستم که ممکن است همه چیز خراب‌تر شود}}
+    \item \textRL{\textfarsi{این روزها از همه چیز میترسم، مخصوصاً اینکه مردم ناامید شوند}}
+\end{itemize}
+
+\textbf{Rule-based post-fix.} Simple keyword scorer (e.g., \textRL{\textfarsi{می‌ترسم}}, \textRL{\textfarsi{نگران}}, \textRL{\textfarsi{هراس}}, \textRL{\textfarsi{وحشت}}, \textRL{\textfarsi{دلهره}}, \textRL{\textfarsi{اضطراب}}); if present with weight \(>\)0.7, override non-Fear predictions to Fear with boosted confidence. Intended for inference-time correction of Fear\(\rightarrow\)Sad errors.
+
+\section{Deployment and Reproducibility}
+Environment: Google Colab with Drive-mounted data under \texttt{/content/drive/MyDrive/Sentiment\_Analysis}. Key paths (base, models, data, outputs) in \texttt{config/paths.py}. Scripts: \texttt{scripts/predict.py} for inference; \texttt{scripts/train400k.py} for incremental training; \texttt{fear\_enhancement/fear\_augmenter.py} for augmentation; \texttt{fear\_enhancement/quick\_fear\_fix.py} for rule-based post-step. Requirements via \texttt{requirements.txt}. Use consistent schema (\texttt{clean}, \texttt{labels/label\_id}) when preparing CSVs.
+
+\section{Ablations and Future Work}
+Planned/ongoing: quantify gains from (a) class weights on/off; (b) with/without 9K fear augmentation; (c) with/without rule-based post-fix. Future: collect real fear data to reduce synthetic bias; dialect-specific tuning; platform-specific evaluation; calibration and explainability for deployment.
+
+\section{Practical Experience and Findings}
+\textbf{Collection and cleaning.} Manually curated Telegram and YouTube channels yielded diverse Afghan Persian/Dari content; heavy cleaning (URLs, mentions, non-Persian chars, short-text filter, Hazm normalization) was essential before labeling. Transliteration variants and dialectal spelling required manual oversight.
+
+\textbf{Labeling journey.} Zero-shot xlm-roberta-large-xnli underperformed (over-labeling Neutral). A 4K manually labeled seed proved decisive; semi-supervised labeling with the seed model scaled to \(\sim\)400K. Adding a culturally relevant ``hope'' class reduced misplacement of optimistic speech into Neutral/Happy.
+
+\textbf{Imbalance pain points.} Fear was nearly invisible (0.25\%); without weighting, Fear collapsed into Sad. Inverse-frequency class weights plus longer training helped stabilize minority learning.
+
+\textbf{Second large-scale run.} Re-running incremental training on the merged 400K + 9K augmented fear set (imbalance ratio improved to \(\sim\)12:1) with the same ParsBERT base and weighted loss reached Eval Acc 0.8614, F1 Macro 0.8391, F1 Weighted 0.8620 in 8{,}728s (146.9 samples/s). Class weights remained necessary; the augmented fear data increased Fear support from 0.25\% to \(\sim\)2.5\%.
+
+\textbf{Fear fixes.} Error analysis showed explicit fear phrases mapped to Sad. Two mitigations: (1) 9K culturally patterned fear augmentation to expose the model to realistic fear syntax; (2) a lightweight rule-based keyword override at inference to rescue Fear\(\rightarrow\)Sad misfires.
+
+\textbf{Training observations.} Cosine decay from 1e-5, batch 16, max\_len 512, FP16 on Colab GPU delivered stable gains across 4 epochs; early stopping avoided overfit. Final macro F1 78.43\% despite 125:1 imbalance.
+
+\textbf{Deployment notes.} Consistent schema (\texttt{clean}, \texttt{label\_id}) across CSVs and scripts prevented path/column errors in Colab. Mounting Drive and pinning versions in \texttt{requirements.txt} improved reruns. A post-hoc enhancer is cheap and can be dropped in without retraining.
+
+\section{Conclusion}
+Incremental fine-tuning of ParsBERT with class-aware weighting, cultural fear augmentation, and a lightweight rule-based enhancer achieves robust macro F1 (78.43\%) despite extreme imbalance. The approach demonstrates that low-resource, culturally sensitive emotion classification can be improved with targeted data design and simple post-hoc fixes in a practical Colab/Drive workflow.
+
+\bibliographystyle{plain}
+\bibliography{sentiment_refs}
+
+\end{document}
