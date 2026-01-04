@@ -30,7 +30,7 @@ from datasets import Dataset
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 from config.paths import PATHS, MODEL_CONFIG
 # Force the correct path
-PATHS["Combined_Labeled_Dataset"] = "/content/drive/MyDrive/Sentiment_Analysis/Data/processed/Combined_Labeled_Dataset_with_fearAug.csv"
+PATHS["Combined_Labeled_Dataset"] = "/content/drive/MyDrive/Sentiment_Analysis/Data/processed/Combined_Labeled_Dataset.csv"
 print(f"Overriding path to: {PATHS['Combined_Labeled_Dataset']}")
 # Custom Trainer with class weights
 class WeightedTrainer(Trainer):
