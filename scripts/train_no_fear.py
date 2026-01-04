@@ -1,10 +1,14 @@
 """
-Train ParsBERT on 7 emotion labels (Fear removed).
-Uses weighted loss for imbalance and saves a new 7-class checkpoint.
+Train a 7-label model (Fear removed) starting from an existing 8-label checkpoint.
+Adjust DATA_PATH, BASE_MODEL, OUTPUT_ROOT to your environment.
 """
 
+# Paths to adjust for your environment
+DATA_PATH = "/content/drive/MyDrive/Sentiment_Analysis/Data/processed/Combined_Labeled_Dataset.csv"
+BASE_MODEL = "/content/drive/MyDrive/Sentiment_Analysis/Models/parsbert_emotion"  # 8-label fine-tuned checkpoint
+OUTPUT_ROOT = "/content/drive/MyDrive/Sentiment_Analysis/outputs"
+
 import os
-import sys
 import json
 import datetime
 import warnings
@@ -30,23 +34,23 @@ from transformers import (
     EarlyStoppingCallback,
 )
 
-sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
-from config.paths import PATHS, MODEL_CONFIG
 
+# ------- Data loading -------
+def load_data():
+    if not os.path.exists(DATA_PATH):
+        raise FileNotFoundError(f"Dataset not found: {DATA_PATH}")
+    df = pd.read_csv(DATA_PATH)
+    if "clean" in df.columns and "text" not in df.columns:
+        df = df.rename(columns={"clean": "text"})
+    if not {"text", "label_id"}.issubset(df.columns):
+        raise ValueError("Dataset must have columns: text, label_id")
 
-class WeightedTrainer(Trainer):
-    def __init__(self, model=None, class_weights=None, **kwargs):
-        # Ensure model is explicitly forwarded; avoids loss if kwargs manipulation happens upstream.
-        super().__init__(model=model, **kwargs)
-        self.class_weights = class_weights
-
-    def compute_loss(self, model, inputs, return_outputs=False):
-        labels = inputs.get("labels")
-        outputs = model(**inputs)
-        logits = outputs.get("logits")
-        loss_fct = torch.nn.CrossEntropyLoss(weight=self.class_weights)
-        loss = loss_fct(logits.view(-1, self.model.config.num_labels), labels.view(-1))
-        return (loss, outputs) if return_outputs else loss
+    df = df.dropna(subset=["text", "label_id"])
+    df = df[df["label_id"] != 7]          # drop Fear
+    df = df[df["label_id"].between(0, 6)] # keep 0-6
+    if df.empty:
+        raise ValueError("Filtered dataset is empty after removing Fear.")
+    return df
 
 
 def compute_metrics(p):
@@ -61,63 +65,43 @@ def compute_metrics(p):
     }
 
 
-def load_dataset():
-    path = PATHS["Combined_Labeled_Dataset"]
-    if not os.path.exists(path):
-        raise FileNotFoundError(f"Dataset not found: {path}")
-    df = pd.read_csv(path)
-    if "clean" in df.columns and "text" not in df.columns:
-        df = df.rename(columns={"clean": "text"})
-    required = {"text", "label_id"}
-    missing = required - set(df.columns)
-    if missing:
-        raise ValueError(f"Missing columns: {missing}")
-    df = df.dropna(subset=["text", "label_id"])
-    # drop Fear (label_id == 7) and keep 0-6
-    df = df[df["label_id"] != 7]
-    df = df[df["label_id"].between(0, 6)]
-    if df.empty:
-        raise ValueError("Filtered dataset is empty after removing Fear class.")
-    return df
+class WeightedTrainer(Trainer):
+    def __init__(self, model=None, class_weights=None, **kwargs):
+        super().__init__(model=model, **kwargs)
+        self.class_weights = class_weights
+
+    def compute_loss(self, model, inputs, return_outputs=False):
+        labels = inputs.get("labels")
+        outputs = model(**inputs)
+        logits = outputs.get("logits")
+        loss_fct = torch.nn.CrossEntropyLoss(weight=self.class_weights)
+        loss = loss_fct(logits.view(-1, self.model.config.num_labels), labels.view(-1))
+        return (loss, outputs) if return_outputs else loss
 
 
 def main():
-    print("Training 7-label model (Fear removed)")
-    print(f"Timestamp: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
-
-    df = load_dataset()
+    df = load_data()
     print(f"Loaded dataset: {len(df)} rows")
 
-    # imbalance stats
     label_counts = df["label_id"].value_counts().sort_index()
     total = len(df)
-    label_names = {
-        0: "Hope",
-        1: "Happy",
-        2: "Neutral",
-        3: "Suprise",
-        4: "Disgust",
-        5: "Sad",
-        6: "Anger",
-    }
+    label_names = {0: "Hope", 1: "Happy", 2: "Neutral", 3: "Suprise", 4: "Disgust", 5: "Sad", 6: "Anger"}
     print("\nLabel distribution (Fear removed):")
     for lid, cnt in label_counts.items():
-        pct = 100 * cnt / total
-        print(f"  {label_names.get(lid, lid)} ({lid}): {cnt} ({pct:.2f}%)")
+        print(f"  {label_names.get(lid, lid)} ({lid}): {cnt} ({100*cnt/total:.2f}%)")
 
-    train_df, eval_df = train_test_split(
-        df, test_size=0.2, stratify=df["label_id"], random_state=42
-    )
+    train_df, eval_df = train_test_split(df, test_size=0.2, stratify=df["label_id"], random_state=42)
     print(f"\nTrain size: {len(train_df)} | Eval size: {len(eval_df)}")
 
-    # tokenizer/model (start from your prior fine-tuned checkpoint, reinit head to 7 labels)
-    base_model_path = PATHS.get("parsbert_emotion", PATHS.get("base_model", "HooshvareLab/bert-base-parsbert-uncased"))
-    tokenizer = AutoTokenizer.from_pretrained(base_model_path)
+    # Model / Tokenizer
+    tokenizer = AutoTokenizer.from_pretrained(BASE_MODEL)
     model = AutoModelForSequenceClassification.from_pretrained(
-        base_model_path, num_labels=7, ignore_mismatched_sizes=True
+        BASE_MODEL,
+        num_labels=7,
+        ignore_mismatched_sizes=True,  # reinit head for 7 classes
     )
 
-    # datasets
+    # Datasets
     train_ds = Dataset.from_pandas(train_df[["text", "label_id"]])
     eval_ds = Dataset.from_pandas(eval_df[["text", "label_id"]])
 
@@ -126,7 +110,7 @@ def main():
             batch["text"],
             truncation=True,
             padding="max_length",
-            max_length=MODEL_CONFIG.get("max_length", 512),
+            max_length=512,
         )
         tok["labels"] = batch["label_id"]
         return tok
@@ -136,18 +120,17 @@ def main():
     train_ds.set_format("torch")
     eval_ds.set_format("torch")
 
-    # class weights
+    # Class weights
     weights = [total / label_counts.get(i, 1) for i in range(7)]
-    weights_tensor = torch.tensor(weights, dtype=torch.float)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    weights_tensor = weights_tensor.to(device)
+    weights_tensor = torch.tensor(weights, dtype=torch.float).to(device)
     model.to(device)
     print("\nClass weights:")
     for i, w in enumerate(weights):
         print(f"  {label_names.get(i, i)}: {w:.2f}x")
 
     timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M")
-    output_dir = os.path.join(PATHS["outputs"], f"no_fear_{timestamp}")
+    output_dir = os.path.join(OUTPUT_ROOT, f"no_fear_{timestamp}")
     os.makedirs(output_dir, exist_ok=True)
 
     args = TrainingArguments(
@@ -155,8 +138,8 @@ def main():
         evaluation_strategy="epoch",
         save_strategy="epoch",
         learning_rate=1e-5,
-        per_device_train_batch_size=MODEL_CONFIG.get("batch_size", 16),
-        per_device_eval_batch_size=MODEL_CONFIG.get("batch_size", 16),
+        per_device_train_batch_size=16,
+        per_device_eval_batch_size=16,
         num_train_epochs=4,
         weight_decay=0.01,
         load_best_model_at_end=True,
@@ -164,9 +147,9 @@ def main():
         greater_is_better=True,
         report_to="none",
         fp16=True,
-        logging_steps=50,
+        logging_steps=100,
         logging_first_step=True,
-        save_total_limit=1,  # keep only the best checkpoint
+        save_total_limit=1,
         push_to_hub=False,
         warmup_steps=100,
         dataloader_drop_last=False,
@@ -184,9 +167,9 @@ def main():
         callbacks=[EarlyStoppingCallback(early_stopping_patience=3)],
     )
 
-    trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
-    print(f"\ntrainable parameters: {trainable_params}")
-    print(f"\ntrain batches: {len(trainer.get_train_dataloader())}")
+    print(f"\ntrainable parameters: {sum(p.numel() for p in model.parameters() if p.requires_grad)}")
+    print(f"train batches: {len(trainer.get_train_dataloader())}")
+
     print("\nStarting 7-label training...")
     trainer.train()
 
@@ -209,7 +192,7 @@ def main():
 
     metadata = {
         "training_type": "7_label_no_fear",
-        "base_model": base_model_path,
+        "base_model": BASE_MODEL,
         "training_date": datetime.datetime.now().isoformat(),
         "dataset_size": len(df),
         "train_samples": len(train_df),
