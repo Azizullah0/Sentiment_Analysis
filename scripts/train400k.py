@@ -374,10 +374,11 @@ def main():
                 "minority_class": "Fear",
                 "imbalance_ratio": f"{max(label_counts.values)/min(label_counts.values):.1f}:1",
                 "fear_samples": int(label_counts[7]),
-    },
-}
-with open(os.path.join(incremental_model_path, "training_metadata.json"), "w") as f:
-    json.dump(metadata, f, indent=2)
+            },
+        }
+
+        with open(os.path.join(incremental_model_path, "training_metadata.json"), "w") as f:
+            json.dump(metadata, f, indent=2)
 
         
         print(" Training completed successfully!")
