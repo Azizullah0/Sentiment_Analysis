@@ -361,24 +361,24 @@ def main():
             "training_type": "incremental_fine_tuning_imbalanced",
             "base_model": previous_model_path,
             "training_date": datetime.datetime.now().isoformat(),
-            "dataset_size": len(df),
-            "train_samples": len(train_df),
-            "test_samples": len(test_df),
-            "label_distribution": label_counts.to_dict(),
-            "class_weights": {i: float(w) for i, w in enumerate(weights)},
-            "final_metrics": evaluation_results,
+            "dataset_size": int(len(df)),
+            "train_samples": int(len(train_df)),
+            "test_samples": int(len(test_df)),
+            "label_distribution": {int(k): int(v) for k, v in label_counts.to_dict().items()},
+            "class_weights": {int(i): float(w) for i, w in enumerate(weights)},
+            "final_metrics": {k: float(v) for k, v in evaluation_results.items()},
             "per_class_f1": {label_names[i]: float(score) for i, score in enumerate(per_class_f1)},
             "training_args": {k: str(v) for k, v in training_args.to_dict().items()},
             "imbalance_notes": {
                 "majority_class": "Happy",
-                "minority_class": "Fear", 
+                "minority_class": "Fear",
                 "imbalance_ratio": f"{max(label_counts.values)/min(label_counts.values):.1f}:1",
-                "fear_samples": label_counts[7]
-            }
-        }
-        
-        with open(os.path.join(incremental_model_path, "training_metadata.json"), "w") as f:
-            json.dump(metadata, f, indent=2)
+                "fear_samples": int(label_counts[7]),
+    },
+}
+with open(os.path.join(incremental_model_path, "training_metadata.json"), "w") as f:
+    json.dump(metadata, f, indent=2)
+
         
         print(" Training completed successfully!")
         print(f" Model saved: {incremental_model_path}")
