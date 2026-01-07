@@ -5,7 +5,7 @@ import numpy as np
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
 
 # Update this to the folder that contains config.json/pytorch_model.bin/tokenizer.* (e.g., your saved run)
-MODEL_PATH = r"/content/drive/MyDrive/Sentiment_Analysis/outputs/incremental_imbalanced_20260105_1937/checkpoint-58752"
+MODEL_PATH = r"/content/drive/MyDrive/Sentiment_Analysis/outputs/incremental_imbalanced_20260105_1937/checkpoint-39168"
 
 # Label map must match the number/order of labels in the loaded model
 LABEL_MAP = {
