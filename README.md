@@ -19,8 +19,7 @@ This project focuses on multiclass sentiment analysis for low-resource social me
 - `config/` configuration files
 - `scripts/` main scripts for preprocessing, training, or evaluation
 - `utils/` helper functions
-- `docs/` supporting material
-- `reports/` reporting of work
+- `docs/`  reporting of work
 - `augmentations/` scrip for augmentations
 ## Project Scope
 This project was developed as part of academic project work in Computer Science and strengthened my skills in NLP, text classification, machine learning, and data-driven evaluation.
