@@ -4,6 +4,7 @@ import json
 from datetime import datetime
 from pathlib import Path
 import pandas as pd
+from config.paths import PATHS
 
 # ----------------------------------------------------
 # AFGHAN FEAR AUGMENTOR (Improved)
@@ -14,7 +15,7 @@ import pandas as pd
 # - Writes required schema: channelId, publishedAt, clean, token_count, Label, label_id
 # ----------------------------------------------------
 
-OUTPUT_CSV = "/content/drive/MyDrive/Sentiment_Analysis/Data/processed/augmented_afghan_fear_9000.csv"
+OUTPUT_CSV = PATHS["augmented_afghan_fear_9000"]
 
 
 class AfghanFearAugmentor:

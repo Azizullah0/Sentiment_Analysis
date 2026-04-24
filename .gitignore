@@ -1,0 +1,14 @@
+.venv/
+.ipynb_checkpoints/
+__pycache__/
+*.pyc
+
+Models/
+outputs/
+
+augmentations/.ipynb_checkpoints/
+config/.ipynb_checkpoints/
+scripts/.ipynb_checkpoints/
+
+config/__pycache__/
+scripts/__pycache__/
