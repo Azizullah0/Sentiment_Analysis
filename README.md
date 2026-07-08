@@ -100,6 +100,23 @@ python scripts/train.py --mode full_8label_aug --batch-size 16 --max-length 256 
 
 Trained models are stored under `Models/`, while experiment-specific runs are written to `outputs/`. Each run saves metadata and evaluation results to make comparisons between experiments easier.
 
+## Merging Augmented Datasets
+
+To create the full augmented training CSV from the latest fear-augmented dataset plus the generated Surprise, Anger, and Disgust datasets:
+
+```bash
+python scripts/merge_augmented_datasets.py --generate-missing
+```
+
+On a server where the data lives in Google Drive, point the project at that folder first:
+
+```bash
+export SENTIMENT_DATA_ROOT=/content/drive/MyDrive/Sentiment_Analysis
+python scripts/merge_augmented_datasets.py --generate-missing
+```
+
+The script reads `Data/processed/Combined_Labeled_Dataset_with_fearAug.csv` and writes `Data/processed/Combined_Labeled_Dataset_with_allAug.csv`.
+
 ## Inference
 
 To run prediction with a trained model:
