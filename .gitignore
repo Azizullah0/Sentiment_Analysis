@@ -5,6 +5,7 @@ __pycache__/
 
 Models/
 outputs/
+Data/
 
 augmentations/.ipynb_checkpoints/
 config/.ipynb_checkpoints/

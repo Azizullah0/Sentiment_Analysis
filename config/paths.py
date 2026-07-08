@@ -117,6 +117,9 @@ PATHS = {
     "Combined_Labeled_Dataset_with_fearAug": os.path.join(
         DATA_ROOT, "Data/processed/Combined_Labeled_Dataset_with_fearAug.csv"
     ),
+    "Combined_Labeled_Dataset_with_allAug": os.path.join(
+        DATA_ROOT, "Data/processed/Combined_Labeled_Dataset_with_allAug.csv"
+    ),
     "augmented_data": os.path.join(DATA_ROOT, "Data/processed/fear_augmented.csv"),
     "Labeled_4K": os.path.join(DATA_ROOT, "Data/processed/Labeled_4K.csv"),
     "augmented_afghan_fear_9000": os.path.join(DATA_ROOT, "Data/processed/augmented_afghan_fear_9000.csv"),
