@@ -127,6 +127,10 @@ PATHS = {
         DATA_ROOT, "Data/processed/Combined_Labeled_Dataset_with_fearAug_surprise_anger.csv"
     ),
     "ablation_outputs": os.path.join(STORAGE_ROOT, "outputs/ablation"),
+    "confidence_outputs": os.path.join(STORAGE_ROOT, "outputs/confidence"),
+    "Combined_Labeled_Dataset_scored": os.path.join(
+        DATA_ROOT, "Data/processed/Combined_Labeled_Dataset_scored.csv"
+    ),
     "augmented_data": os.path.join(DATA_ROOT, "Data/processed/fear_augmented.csv"),
     "Labeled_4K": os.path.join(DATA_ROOT, "Data/processed/Labeled_4K.csv"),
     "augmented_afghan_fear_9000": os.path.join(DATA_ROOT, "Data/processed/augmented_afghan_fear_9000.csv"),
@@ -140,3 +144,11 @@ MODEL_CONFIG = {
     "learning_rate": 2e-5,
     "num_train_epochs": 5,
 }
+
+
+def confidence_filtered_path(threshold, output_dir=None):
+    """Return path for a confidence-filtered dataset CSV."""
+    directory = output_dir or os.path.join(DATA_ROOT, "Data/processed")
+    threshold_label = str(threshold).replace(".", "")
+    filename = f"Combined_Labeled_Dataset_conf{threshold_label}.csv"
+    return os.path.join(directory, filename)
