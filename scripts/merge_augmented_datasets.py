@@ -13,17 +13,32 @@ from config.paths import PATHS
 REQUIRED_COLUMNS = {"clean", "Label", "label_id"}
 
 DEFAULT_AUGMENTED_EMOTIONS = ["surprise", "disgust", "anger"]
+VALID_EMOTIONS = set(DEFAULT_AUGMENTED_EMOTIONS)
+
+
+def parse_emotions(value):
+    if not value:
+        return list(DEFAULT_AUGMENTED_EMOTIONS)
+
+    emotions = [item.strip().lower() for item in value.split(",") if item.strip()]
+    invalid = sorted(set(emotions) - VALID_EMOTIONS)
+    if invalid:
+        raise ValueError(
+            f"Invalid emotion(s): {invalid}. Valid options: {sorted(VALID_EMOTIONS)}"
+        )
+    return emotions
+
+
+def augmented_files_for_emotions(emotions, n):
+    return [processed_path(f"augmented_afghan_{emotion}_{n}.csv") for emotion in emotions]
 
 
 def processed_path(filename):
     return os.path.join(PATHS["data_root"], "Data/processed", filename)
 
 
-def default_augmented_files(n):
-    return [
-        processed_path(f"augmented_afghan_{emotion}_{n}.csv")
-        for emotion in DEFAULT_AUGMENTED_EMOTIONS
-    ]
+def default_augmented_files(n, emotions=None):
+    return augmented_files_for_emotions(emotions or DEFAULT_AUGMENTED_EMOTIONS, n)
 
 
 def normalize_text(value):
@@ -114,6 +129,14 @@ def parse_args():
         ),
     )
     parser.add_argument(
+        "--emotions",
+        default=",".join(DEFAULT_AUGMENTED_EMOTIONS),
+        help=(
+            "Comma-separated subset of augmentation emotions to merge "
+            "(surprise, disgust, anger). Example: --emotions surprise"
+        ),
+    )
+    parser.add_argument(
         "--augmented-file",
         action="append",
         dest="augmented_files",
@@ -142,7 +165,7 @@ def parse_args():
     return parser.parse_args()
 
 
-def maybe_generate_missing(paths, n, seed):
+def maybe_generate_missing(paths, n, seed, emotions):
     missing = [path for path in paths if not os.path.exists(path)]
     if not missing:
         return
@@ -150,8 +173,7 @@ def maybe_generate_missing(paths, n, seed):
     from augmentations.emotion_augmenter import run
 
     missing_by_emotion = {
-        emotion: processed_path(f"augmented_afghan_{emotion}_{n}.csv")
-        for emotion in DEFAULT_AUGMENTED_EMOTIONS
+        emotion: processed_path(f"augmented_afghan_{emotion}_{n}.csv") for emotion in emotions
     }
     for emotion, path in missing_by_emotion.items():
         if path in missing:
@@ -160,18 +182,20 @@ def maybe_generate_missing(paths, n, seed):
 
 def main():
     args = parse_args()
+    emotions = parse_emotions(args.emotions)
     base_path = os.path.abspath(os.path.expanduser(args.base_dataset))
     output_path = os.path.abspath(os.path.expanduser(args.output))
     augmented_files = [
         os.path.abspath(os.path.expanduser(path))
-        for path in (args.augmented_files or default_augmented_files(args.n))
+        for path in (args.augmented_files or default_augmented_files(args.n, emotions))
     ]
 
     if args.generate_missing and not args.augmented_files:
-        maybe_generate_missing(augmented_files, n=args.n, seed=args.seed)
+        maybe_generate_missing(augmented_files, n=args.n, seed=args.seed, emotions=emotions)
 
     print(f"Base dataset: {base_path}")
     print(f"Output dataset: {output_path}")
+    print(f"Emotions to merge: {', '.join(emotions)}")
     print("Augmented datasets:")
     for path in augmented_files:
         print(f" - {path}")

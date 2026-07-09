@@ -6,7 +6,8 @@ Supported presets:
 - baseline_4k: base 8-label training on the 4K labeled dataset
 - full_8label: full dataset training with all 8 labels
 - full_7label: full dataset training with Fear removed
-- full_8label_aug: full dataset training on the augmented dataset
+- full_8label_aug: full dataset training on the fear-augmented dataset
+- full_8label_all_aug: full dataset training on all template augmentations
 """
 
 import argparse
@@ -106,7 +107,7 @@ def parse_args():
     parser = argparse.ArgumentParser(description="Unified training script for sentiment experiments.")
     parser.add_argument(
         "--mode",
-        choices=["baseline_4k", "full_8label", "full_7label", "full_8label_aug"],
+        choices=["baseline_4k", "full_8label", "full_7label", "full_8label_aug", "full_8label_all_aug"],
         required=True,
         help="Experiment preset to run.",
     )
@@ -315,8 +316,50 @@ def get_preset(mode):
             "tokenizer_use_fast": None,
             "padding": "max_length",
             "description_lines": [
-                "Full-dataset 8-label training on the augmented dataset.",
+                "Full-dataset 8-label training on the fear-augmented dataset.",
                 "Uses dynamic class weights for the augmented imbalanced dataset.",
+            ],
+        },
+        "full_8label_all_aug": {
+            "training_type": "full_8_label_all_augmented",
+            "dataset_path": PATHS["Combined_Labeled_Dataset_with_allAug"],
+            "base_model": PATHS["parsbert_emotion"],
+            "output_dir": os.path.join(PATHS["outputs"], f"full_8label_all_aug_{timestamp_now()}"),
+            "final_model_dir": PATHS["incremental_finetuned_model"],
+            "text_column": "clean",
+            "label_column": "label_id",
+            "num_labels": 8,
+            "label_names": LABEL_NAMES_8,
+            "problem_type": None,
+            "rename_text_to_clean": False,
+            "derive_labels_from_label_text": False,
+            "drop_fear": False,
+            "compute_dynamic_class_weights": True,
+            "fixed_class_weights": None,
+            "learning_rate": 1e-5,
+            "batch_size": MODEL_CONFIG.get("batch_size", 16),
+            "num_train_epochs": 4,
+            "weight_decay": 0.01,
+            "warmup_steps": 100,
+            "logging_steps": 50,
+            "logging_strategy": "steps",
+            "logging_dir": None,
+            "metric_for_best_model": "f1_macro",
+            "greater_is_better": True,
+            "save_total_limit": 2,
+            "fp16": True,
+            "push_to_hub": False,
+            "dataloader_drop_last": True,
+            "dataloader_num_workers": None,
+            "logging_first_step": False,
+            "early_stopping_patience": 3,
+            "timestamp_output": True,
+            "output_prefix": "full_8label_all_aug",
+            "tokenizer_use_fast": None,
+            "padding": "max_length",
+            "description_lines": [
+                "Full-dataset 8-label training on all template augmentations.",
+                "Fear + Surprise + Anger + Disgust (Combined_Labeled_Dataset_with_allAug.csv).",
             ],
         },
     }
