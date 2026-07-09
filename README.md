@@ -7,6 +7,7 @@ The codebase has been simplified to use a single training script, `scripts/train
 ## Repository Overview
 
 - `scripts/train.py`: main training entrypoint
+- `scripts/run_ablation.py`: ablation experiment runner (one run at a time)
 - `scripts/predict.py`: inference script for loading a trained model and running predictions
 - `config/paths.py`: path configuration for datasets, models, and output directories
 - `augmentations/fear_augmenter.py`: utilities related to fear-class augmentation
@@ -35,6 +36,7 @@ The training script expects the following processed files when using the default
 - `Data/processed/Labeled_4K.csv`
 - `Data/processed/Combined_Labeled_Dataset.csv`
 - `Data/processed/Combined_Labeled_Dataset_with_fearAug.csv`
+- `Data/processed/Combined_Labeled_Dataset_with_allAug.csv`
 
 ## Training
 
@@ -51,7 +53,8 @@ Supported modes:
 - `baseline_4k`: 8-label training on the 4K labeled dataset
 - `full_8label`: training on the full labeled dataset with all eight classes
 - `full_7label`: training on the full labeled dataset after removing the `Fear` class
-- `full_8label_aug`: training on the augmented full dataset
+- `full_8label_aug`: training on the fear-augmented full dataset
+- `full_8label_all_aug`: training on the full dataset with all template augmentations (Fear + Surprise + Anger + Disgust)
 
 Example commands:
 
@@ -59,6 +62,7 @@ Example commands:
 python scripts/train.py --mode full_8label
 python scripts/train.py --mode full_7label
 python scripts/train.py --mode full_8label_aug
+python scripts/train.py --mode full_8label_all_aug --batch-size 16 --max-length 256 --use-dynamic-padding
 python scripts/train.py --mode full_8label_aug --batch-size 16 --max-length 256 --use-dynamic-padding
 python scripts/train.py --mode full_8label_aug --batch-size 8 --num-train-epochs 2
 ```
@@ -66,7 +70,7 @@ python scripts/train.py --mode full_8label_aug --batch-size 8 --num-train-epochs
 Padding strategy used in this project:
 
 - `baseline_4k` is run with static padding
-- `full_8label`, `full_7label`, and `full_8label_aug` are run with dynamic padding
+- `full_8label`, `full_7label`, `full_8label_aug`, and `full_8label_all_aug` are run with dynamic padding
 
 Common optional arguments:
 
@@ -90,15 +94,49 @@ Baseline run with static padding:
 python scripts/train.py --mode baseline_4k
 ```
 
-Full-dataset run with dynamic padding:
+Full-dataset run with all augmentations (best known setup: 86.12% accuracy, 0.857 Macro-F1):
 
 ```bash
-python scripts/train.py --mode full_8label_aug --batch-size 16 --max-length 256 --use-dynamic-padding
+python scripts/train.py --mode full_8label_all_aug --batch-size 16 --max-length 256 --use-dynamic-padding
 ```
 
 ## Outputs
 
 Trained models are stored under `Models/`, while experiment-specific runs are written to `outputs/`. Each run saves metadata and evaluation results to make comparisons between experiments easier.
+
+## Ablation Study
+
+Run augmentation ablation experiments one at a time. Review `training_metadata.json` after each run before continuing.
+
+List all runs:
+
+```bash
+python scripts/run_ablation.py --list
+```
+
+Preview commands (dry-run):
+
+```bash
+python scripts/run_ablation.py --dry-run
+```
+
+Run a single experiment:
+
+```bash
+python scripts/run_ablation.py --run-id A0
+python scripts/run_ablation.py --run-id A2 --build-datasets
+python scripts/run_ablation.py --run-id A3 --build-datasets
+```
+
+| Run ID | Dataset | Status |
+|--------|---------|--------|
+| A0 | Pseudo-labeled 400K only | Needs run |
+| A1 | Fear augmentation only | Anchor: 85.75% acc, 0.836 Macro-F1 |
+| A2 | Fear + Surprise | Needs run (use `--build-datasets`) |
+| A3 | Fear + Surprise + Anger | Needs run (use `--build-datasets`) |
+| A4 | Full stack (all augmentations) | Anchor: 86.12% acc, 0.857 Macro-F1 |
+
+Results are saved under `outputs/ablation/<run_id>/`. Anchor runs A1 and A4 are skipped unless you pass `--force`.
 
 ## Merging Augmented Datasets
 
@@ -116,6 +154,13 @@ python scripts/merge_augmented_datasets.py --generate-missing
 ```
 
 The script reads `Data/processed/Combined_Labeled_Dataset_with_fearAug.csv` and writes `Data/processed/Combined_Labeled_Dataset_with_allAug.csv`.
+
+Build partial datasets for ablation (A2, A3):
+
+```bash
+python scripts/merge_augmented_datasets.py --emotions surprise --output Data/processed/Combined_Labeled_Dataset_with_fearAug_surprise.csv
+python scripts/merge_augmented_datasets.py --emotions surprise,anger --output Data/processed/Combined_Labeled_Dataset_with_fearAug_surprise_anger.csv
+```
 
 ## Inference
 
