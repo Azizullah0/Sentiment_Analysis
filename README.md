@@ -8,6 +8,9 @@ The codebase has been simplified to use a single training script, `scripts/train
 
 - `scripts/train.py`: main training entrypoint
 - `scripts/run_ablation.py`: ablation experiment runner (one run at a time)
+- `scripts/score_pseudo_labels.py`: score pseudo-labels with seed model confidence
+- `scripts/filter_by_confidence.py`: filter scored dataset by confidence threshold
+- `scripts/run_confidence_experiments.py`: confidence threshold training experiments
 - `scripts/predict.py`: inference script for loading a trained model and running predictions
 - `config/paths.py`: path configuration for datasets, models, and output directories
 - `augmentations/fear_augmenter.py`: utilities related to fear-class augmentation
@@ -137,6 +140,39 @@ python scripts/run_ablation.py --run-id A3 --build-datasets
 | A4 | Full stack (all augmentations) | Anchor: 86.12% acc, 0.857 Macro-F1 |
 
 Results are saved under `outputs/ablation/<run_id>/`. Anchor runs A1 and A4 are skipped unless you pass `--force`.
+
+## Confidence Threshold Experiments
+
+Validate self-training quality by scoring the 400K pseudo-labeled dataset with the 4K seed model, then training on confidence-filtered subsets.
+
+**Step 1 — Score** (review printed diagnostics before continuing):
+
+```bash
+python scripts/score_pseudo_labels.py
+```
+
+**Step 2 — Filter** (adjust thresholds based on your review):
+
+```bash
+python scripts/filter_by_confidence.py --threshold 0.7 0.8 0.9
+```
+
+**Step 3 — Train** (one experiment at a time):
+
+```bash
+python scripts/run_confidence_experiments.py --list
+python scripts/run_confidence_experiments.py --run-id C0
+python scripts/run_confidence_experiments.py --run-id C2 --build-filtered
+```
+
+| Run ID | Dataset | Purpose |
+|--------|---------|---------|
+| C0 | Unfiltered 400K | Baseline reference |
+| C1 | conf >= 0.7 + agreement | Quality vs. size trade-off |
+| C2 | conf >= 0.8 + agreement | Likely sweet spot |
+| C3 | conf >= 0.9 + agreement | Highest precision, smallest set |
+
+Results are saved under `outputs/confidence/<run_id>/`. Review `training_metadata.json` after each run before continuing.
 
 ## Merging Augmented Datasets
 
