@@ -143,7 +143,9 @@ Results are saved under `outputs/ablation/<run_id>/`. Anchor runs A1 and A4 are 
 
 ## Confidence Threshold Experiments
 
-Validate self-training quality by scoring the 400K pseudo-labeled dataset with the 4K seed model, then training on confidence-filtered subsets.
+Validate self-training quality by scoring the 400K pseudo-labeled dataset, filtering the **training pool only**, and evaluating on a **fixed unfiltered holdout** (same 20% split as ablation, seed=42).
+
+**Important:** Do not train and test on the same filtered CSV — that inflates metrics (~98% accuracy). Use `--valid-eval` (default).
 
 **Step 1 — Score** (review printed diagnostics before continuing):
 
@@ -151,28 +153,41 @@ Validate self-training quality by scoring the 400K pseudo-labeled dataset with t
 python scripts/score_pseudo_labels.py
 ```
 
-**Step 2 — Filter** (adjust thresholds based on your review):
+**Step 2 — Prepare splits** (fixed holdout + filtered train pools):
 
 ```bash
-python scripts/filter_by_confidence.py --threshold 0.7 0.8 0.9
+python scripts/prepare_confidence_splits.py --threshold 0.7 0.8 0.9
 ```
 
-**Step 3 — Train** (one experiment at a time):
+Creates:
+- `Data/processed/eval_holdout_original.csv` — fixed 20% test (unfiltered)
+- `Data/processed/train_pool_original.csv` — 80% train pool (unfiltered, for C0)
+- `Data/processed/train_filtered_conf07.csv` etc. — filtered train pools only
+
+**Step 3 — Train** (one experiment at a time, valid eval by default):
 
 ```bash
 python scripts/run_confidence_experiments.py --list
-python scripts/run_confidence_experiments.py --run-id C0
-python scripts/run_confidence_experiments.py --run-id C2 --build-filtered
+python scripts/run_confidence_experiments.py --run-id C1 --valid-eval --prepare-splits
+python scripts/run_confidence_experiments.py --run-id C2 --valid-eval
 ```
 
-| Run ID | Dataset | Purpose |
-|--------|---------|---------|
-| C0 | Unfiltered 400K | Baseline reference |
-| C1 | conf >= 0.7 + agreement | Quality vs. size trade-off |
-| C2 | conf >= 0.8 + agreement | Likely sweet spot |
-| C3 | conf >= 0.9 + agreement | Highest precision, smallest set |
+**Re-evaluate existing C1 model** (no retrain needed):
 
-Results are saved under `outputs/confidence/<run_id>/`. Review `training_metadata.json` after each run before continuing.
+```bash
+python scripts/evaluate_holdout.py --model outputs/confidence/C1
+```
+
+| Run ID | Train data | Eval data | Purpose |
+|--------|------------|-----------|---------|
+| C0 | `train_pool_original.csv` | `eval_holdout_original.csv` | Baseline on same holdout |
+| C1 | `train_filtered_conf07.csv` | fixed holdout | conf >= 0.7 |
+| C2 | `train_filtered_conf08.csv` | fixed holdout | conf >= 0.8 |
+| C3 | `train_filtered_conf09.csv` | fixed holdout | conf >= 0.9 |
+
+Results: `outputs/confidence/<run_id>/training_metadata.json` and optional `holdout_eval.json`.
+
+Legacy (invalid) mode: `--legacy-eval` — random split inside filtered CSV; do not report in thesis.
 
 ## Merging Augmented Datasets
 
