@@ -8,6 +8,9 @@ The codebase has been simplified to use a single training script, `scripts/train
 
 - `scripts/train.py`: main training entrypoint
 - `scripts/run_ablation.py`: ablation experiment runner (one run at a time)
+- `scripts/score_pseudo_labels.py`: score pseudo-labels with seed model confidence
+- `scripts/filter_by_confidence.py`: filter scored dataset by confidence threshold
+- `scripts/run_confidence_experiments.py`: confidence threshold training experiments
 - `scripts/predict.py`: inference script for loading a trained model and running predictions
 - `config/paths.py`: path configuration for datasets, models, and output directories
 - `augmentations/fear_augmenter.py`: utilities related to fear-class augmentation
@@ -137,6 +140,54 @@ python scripts/run_ablation.py --run-id A3 --build-datasets
 | A4 | Full stack (all augmentations) | Anchor: 86.12% acc, 0.857 Macro-F1 |
 
 Results are saved under `outputs/ablation/<run_id>/`. Anchor runs A1 and A4 are skipped unless you pass `--force`.
+
+## Confidence Threshold Experiments
+
+Validate self-training quality by scoring the 400K pseudo-labeled dataset, filtering the **training pool only**, and evaluating on a **fixed unfiltered holdout** (same 20% split as ablation, seed=42).
+
+**Important:** Do not train and test on the same filtered CSV — that inflates metrics (~98% accuracy). Use `--valid-eval` (default).
+
+**Step 1 — Score** (review printed diagnostics before continuing):
+
+```bash
+python scripts/score_pseudo_labels.py
+```
+
+**Step 2 — Prepare splits** (fixed holdout + filtered train pools):
+
+```bash
+python scripts/prepare_confidence_splits.py --threshold 0.7 0.8 0.9
+```
+
+Creates:
+- `Data/processed/eval_holdout_original.csv` — fixed 20% test (unfiltered)
+- `Data/processed/train_pool_original.csv` — 80% train pool (unfiltered, for C0)
+- `Data/processed/train_filtered_conf07.csv` etc. — filtered train pools only
+
+**Step 3 — Train** (one experiment at a time, valid eval by default):
+
+```bash
+python scripts/run_confidence_experiments.py --list
+python scripts/run_confidence_experiments.py --run-id C1 --valid-eval --prepare-splits
+python scripts/run_confidence_experiments.py --run-id C2 --valid-eval
+```
+
+**Re-evaluate existing C1 model** (no retrain needed):
+
+```bash
+python scripts/evaluate_holdout.py --model outputs/confidence/C1
+```
+
+| Run ID | Train data | Eval data | Purpose |
+|--------|------------|-----------|---------|
+| C0 | `train_pool_original.csv` | `eval_holdout_original.csv` | Baseline on same holdout |
+| C1 | `train_filtered_conf07.csv` | fixed holdout | conf >= 0.7 |
+| C2 | `train_filtered_conf08.csv` | fixed holdout | conf >= 0.8 |
+| C3 | `train_filtered_conf09.csv` | fixed holdout | conf >= 0.9 |
+
+Results: `outputs/confidence/<run_id>/training_metadata.json` and optional `holdout_eval.json`.
+
+Legacy (invalid) mode: `--legacy-eval` — random split inside filtered CSV; do not report in thesis.
 
 ## Merging Augmented Datasets
 

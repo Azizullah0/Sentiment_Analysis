@@ -112,6 +112,11 @@ def parse_args():
         help="Experiment preset to run.",
     )
     parser.add_argument("--dataset-path", type=str, help="Override dataset CSV path.")
+    parser.add_argument(
+        "--eval-dataset-path",
+        type=str,
+        help="Fixed eval CSV (no random split). Use entire dataset-path as training data.",
+    )
     parser.add_argument("--base-model", type=str, help="Override model/checkpoint used for initialization.")
     parser.add_argument("--output-dir", type=str, help="Override training output directory.")
     parser.add_argument("--final-model-dir", type=str, help="Override final saved model directory.")
@@ -412,12 +417,14 @@ def resolve_runtime_config(args):
         config["fp16"] = args.fp16
     if args.use_dynamic_padding:
         config["padding"] = False
+    if args.eval_dataset_path:
+        config["eval_dataset_path"] = os.path.abspath(os.path.expanduser(args.eval_dataset_path))
 
     return config
 
 
-def load_dataframe(config):
-    dataset_path = config["dataset_path"]
+def load_dataframe(config, dataset_path=None):
+    dataset_path = dataset_path or config["dataset_path"]
     if not os.path.exists(dataset_path):
         raise FileNotFoundError(f"Dataset not found: {dataset_path}")
 
@@ -498,13 +505,7 @@ def analyze_distribution(df, config):
     return label_counts
 
 
-def create_datasets(df, config, args, tokenizer):
-    train_df, eval_df = train_test_split(
-        df,
-        test_size=args.test_size,
-        stratify=df[config["label_column"]],
-        random_state=args.random_state,
-    )
+def create_datasets(train_df, eval_df, config, tokenizer):
     print(f"\nTrain size: {len(train_df)} | Eval size: {len(eval_df)}")
 
     train_ds = Dataset.from_pandas(train_df[[config["text_column"], config["label_column"]]])
@@ -531,7 +532,17 @@ def create_datasets(df, config, args, tokenizer):
     eval_ds = eval_ds.remove_columns(columns_to_remove)
     train_ds.set_format("torch")
     eval_ds.set_format("torch")
-    return train_df, eval_df, train_ds, eval_ds
+    return train_ds, eval_ds
+
+
+def split_train_eval(df, config, args):
+    train_df, eval_df = train_test_split(
+        df,
+        test_size=args.test_size,
+        stratify=df[config["label_column"]],
+        random_state=args.random_state,
+    )
+    return train_df, eval_df
 
 
 def build_model_and_tokenizer(config):
@@ -652,14 +663,25 @@ def main():
     print(f"Storage root: {PATHS['storage_root']}")
     print(f"Data root: {PATHS['data_root']}")
     print(f"Dataset path: {config['dataset_path']}")
+    if config.get("eval_dataset_path"):
+        print(f"Eval dataset path: {config['eval_dataset_path']} (fixed holdout)")
     print(f"Base model: {config['base_model']}")
 
     ensure_output_paths(config)
-    df = load_dataframe(config)
-    print(f"Loaded dataset: {len(df)} rows")
-    label_counts = analyze_distribution(df, config)
+    train_df = load_dataframe(config)
+    print(f"Loaded training dataset: {len(train_df)} rows")
+
+    if config.get("eval_dataset_path"):
+        eval_df = load_dataframe(config, dataset_path=config["eval_dataset_path"])
+        print(f"Loaded eval dataset: {len(eval_df)} rows")
+        eval_protocol = "fixed_holdout"
+    else:
+        train_df, eval_df = split_train_eval(train_df, config, args)
+        eval_protocol = "random_split"
+
+    label_counts = analyze_distribution(train_df, config)
     tokenizer, model, device = build_model_and_tokenizer(config)
-    train_df, eval_df, train_ds, eval_ds = create_datasets(df, config, args, tokenizer)
+    train_ds, eval_ds = create_datasets(train_df, eval_df, config, tokenizer)
     weights, weights_tensor = build_class_weights(config, label_counts, device)
     training_args = build_training_args(config)
 
@@ -705,7 +727,9 @@ def main():
         "base_model": config["base_model"],
         "training_date": datetime.datetime.now().isoformat(),
         "dataset_path": config["dataset_path"],
-        "dataset_size": int(len(df)),
+        "eval_dataset_path": config.get("eval_dataset_path"),
+        "eval_protocol": eval_protocol,
+        "dataset_size": int(len(train_df)),
         "train_samples": int(len(train_df)),
         "eval_samples": int(len(eval_df)),
         "label_distribution": {int(k): int(v) for k, v in label_counts.to_dict().items()},
