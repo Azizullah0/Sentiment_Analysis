@@ -75,6 +75,12 @@ ABLATION_RUNS = {
         "anchor": True,
         "anchor_metrics": {"accuracy": 0.8612, "f1_macro": 0.857},
     },
+    "A5": {
+        "description": "A4 + back-translation from 4K gold seed",
+        "mode": "full_8label_all_aug_bt",
+        "dataset_path": PATHS["Combined_Labeled_Dataset_with_allAug_bt"],
+        "anchor": False,
+    },
 }
 
 
