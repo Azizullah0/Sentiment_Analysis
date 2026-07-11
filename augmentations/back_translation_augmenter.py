@@ -136,6 +136,14 @@ def to_schema(rows: list[dict]) -> list[dict]:
     ]
 
 
+def resolve_text_column(df: pd.DataFrame) -> str:
+    if "clean" in df.columns:
+        return "clean"
+    if "text" in df.columns:
+        return "text"
+    raise ValueError("Dataset must contain a text column named 'clean' or 'text'")
+
+
 def load_source_pool(source_dataset: str, label: str) -> list[str]:
     path = Path(source_dataset)
     if not path.exists():
@@ -143,11 +151,14 @@ def load_source_pool(source_dataset: str, label: str) -> list[str]:
 
     df = pd.read_csv(path)
     df.columns = df.columns.str.strip()
-    if "clean" not in df.columns or "Label" not in df.columns:
-        raise ValueError(f"{path} must contain 'clean' and 'Label' columns")
+    if "Label" not in df.columns:
+        raise ValueError(f"{path} must contain a 'Label' column")
+
+    text_column = resolve_text_column(df)
+    df["Label"] = df["Label"].replace("Suprise", "Surprise")
 
     pool = (
-        df.loc[df["Label"].astype(str).str.strip() == label, "clean"]
+        df.loc[df["Label"].astype(str).str.strip() == label, text_column]
         .dropna()
         .astype(str)
         .map(str.strip)
