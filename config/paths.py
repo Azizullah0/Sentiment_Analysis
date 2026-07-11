@@ -120,6 +120,9 @@ PATHS = {
     "Combined_Labeled_Dataset_with_allAug": os.path.join(
         DATA_ROOT, "Data/processed/Combined_Labeled_Dataset_with_allAug.csv"
     ),
+    "Combined_Labeled_Dataset_with_allAug_bt": os.path.join(
+        DATA_ROOT, "Data/processed/Combined_Labeled_Dataset_with_allAug_bt.csv"
+    ),
     "Combined_Labeled_Dataset_with_fearAug_surprise": os.path.join(
         DATA_ROOT, "Data/processed/Combined_Labeled_Dataset_with_fearAug_surprise.csv"
     ),
@@ -135,6 +138,7 @@ PATHS = {
     "train_pool_original": os.path.join(DATA_ROOT, "Data/processed/train_pool_original.csv"),
     "augmented_data": os.path.join(DATA_ROOT, "Data/processed/fear_augmented.csv"),
     "Labeled_4K": os.path.join(DATA_ROOT, "Data/processed/Labeled_4K.csv"),
+    "bt_spotcheck_dir": os.path.join(DATA_ROOT, "Data/processed"),
     "augmented_afghan_fear_9000": os.path.join(DATA_ROOT, "Data/processed/augmented_afghan_fear_9000.csv"),
     "datasets": os.path.join(DATA_ROOT, "datasets"),
     "outputs": os.path.join(STORAGE_ROOT, "outputs"),
@@ -162,3 +166,8 @@ def train_filtered_confidence_path(threshold, output_dir=None):
     threshold_label = str(threshold).replace(".", "")
     filename = f"train_filtered_conf{threshold_label}.csv"
     return os.path.join(directory, filename)
+
+
+def augmented_bt_path(emotion: str, n: int) -> str:
+    """Return path for a back-translation augmentation CSV."""
+    return os.path.join(DATA_ROOT, "Data/processed", f"augmented_bt_{emotion.lower()}_{n}.csv")

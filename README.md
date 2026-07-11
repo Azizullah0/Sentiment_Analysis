@@ -8,12 +8,14 @@ The codebase has been simplified to use a single training script, `scripts/train
 
 - `scripts/train.py`: main training entrypoint
 - `scripts/run_ablation.py`: ablation experiment runner (one run at a time)
+- `scripts/run_backtranslation.py`: back-translation pipeline (spot-check → generate → merge → A5)
 - `scripts/score_pseudo_labels.py`: score pseudo-labels with seed model confidence
 - `scripts/filter_by_confidence.py`: filter scored dataset by confidence threshold
 - `scripts/run_confidence_experiments.py`: confidence threshold training experiments
 - `scripts/predict.py`: inference script for loading a trained model and running predictions
 - `config/paths.py`: path configuration for datasets, models, and output directories
 - `augmentations/fear_augmenter.py`: utilities related to fear-class augmentation
+- `augmentations/back_translation_augmenter.py`: NLLB round-trip augmentation from 4K gold seed
 - `utils/dataset_utils.py`: helper functions for dataset preparation
 
 ## Requirements
@@ -40,6 +42,7 @@ The training script expects the following processed files when using the default
 - `Data/processed/Combined_Labeled_Dataset.csv`
 - `Data/processed/Combined_Labeled_Dataset_with_fearAug.csv`
 - `Data/processed/Combined_Labeled_Dataset_with_allAug.csv`
+- `Data/processed/Combined_Labeled_Dataset_with_allAug_bt.csv` (after Phase 3 merge)
 
 ## Training
 
@@ -58,6 +61,7 @@ Supported modes:
 - `full_7label`: training on the full labeled dataset after removing the `Fear` class
 - `full_8label_aug`: training on the fear-augmented full dataset
 - `full_8label_all_aug`: training on the full dataset with all template augmentations (Fear + Surprise + Anger + Disgust)
+- `full_8label_all_aug_bt`: training on template augmentations plus back-translation from 4K gold seed (A5)
 
 Example commands:
 
@@ -138,8 +142,59 @@ python scripts/run_ablation.py --run-id A3 --build-datasets
 | A2 | Fear + Surprise | Needs run (use `--build-datasets`) |
 | A3 | Fear + Surprise + Anger | Needs run (use `--build-datasets`) |
 | A4 | Full stack (all augmentations) | Anchor: 86.12% acc, 0.857 Macro-F1 |
+| A5 | A4 + back-translation from 4K seed | Needs run (after Phase 3 merge) |
 
 Results are saved under `outputs/ablation/<run_id>/`. Anchor runs A1 and A4 are skipped unless you pass `--force`.
+
+## Back-Translation (Phase 3)
+
+Complements template augmentation with lexical paraphrase diversity from real 4K gold sentences via NLLB round-trip (`pes_Arab` ↔ `eng_Latn`). Compare **A5** against anchor **A4**.
+
+**Stop rule:** If spot-check shows fewer than 80% label-preserving / natural samples per class, skip full generation and keep A4 as the best model.
+
+**Step 1 — Spot-check** (review before continuing, ~30–60 min GPU):
+
+```bash
+python scripts/run_backtranslation.py --step spotcheck --dry-run
+python scripts/run_backtranslation.py --step spotcheck
+```
+
+Review `Data/processed/bt_spotcheck_*.csv`: label still correct? Dari natural? No English leakage?
+
+**Step 2 — Full generation** (overnight, ~6–12 h GPU):
+
+```bash
+python scripts/run_backtranslation.py --step generate
+```
+
+Target counts: Surprise 2000, Anger 2000, Disgust 2000, Sad 1500, Fear 1000 (from 4K originals only).
+
+**Step 3 — Merge** onto existing allAug dataset:
+
+```bash
+python scripts/run_backtranslation.py --step merge
+```
+
+Writes `Data/processed/Combined_Labeled_Dataset_with_allAug_bt.csv`.
+
+**Step 4 — Train A5**:
+
+```bash
+python scripts/run_backtranslation.py --step train
+# or: python scripts/run_ablation.py --run-id A5
+```
+
+| Run ID | Dataset | Compare to |
+|--------|---------|------------|
+| A4 (anchor) | `Combined_Labeled_Dataset_with_allAug.csv` | 86.12% acc, 0.857 Macro-F1 |
+| A5 | `Combined_Labeled_Dataset_with_allAug_bt.csv` | Win if Macro-F1 > 0.857 |
+
+Single-class generation (manual):
+
+```bash
+python augmentations/back_translation_augmenter.py --emotion surprise --n 2000 --seed 42
+python augmentations/back_translation_augmenter.py --emotion surprise --spot-check-only
+```
 
 ## Confidence Threshold Experiments
 
@@ -211,6 +266,17 @@ Build partial datasets for ablation (A2, A3):
 ```bash
 python scripts/merge_augmented_datasets.py --emotions surprise --output Data/processed/Combined_Labeled_Dataset_with_fearAug_surprise.csv
 python scripts/merge_augmented_datasets.py --emotions surprise,anger --output Data/processed/Combined_Labeled_Dataset_with_fearAug_surprise_anger.csv
+```
+
+Merge back-translation files onto allAug (also done by `run_backtranslation.py --step merge`):
+
+```bash
+python scripts/merge_augmented_datasets.py \
+  --base-dataset Data/processed/Combined_Labeled_Dataset_with_allAug.csv \
+  --no-template-aug \
+  --extra-augmented-file Data/processed/augmented_bt_surprise_2000.csv \
+  --extra-augmented-file Data/processed/augmented_bt_anger_2000.csv \
+  --output Data/processed/Combined_Labeled_Dataset_with_allAug_bt.csv
 ```
 
 ## Inference

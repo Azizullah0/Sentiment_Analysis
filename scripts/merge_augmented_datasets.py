@@ -146,6 +146,21 @@ def parse_args():
         ),
     )
     parser.add_argument(
+        "--extra-augmented-file",
+        action="append",
+        dest="extra_augmented_files",
+        default=None,
+        help=(
+            "Additional augmentation CSV(s) appended after template augmentations "
+            "(e.g. back-translation files merged onto allAug)."
+        ),
+    )
+    parser.add_argument(
+        "--no-template-aug",
+        action="store_true",
+        help="Skip default Surprise/Disgust/Anger template files (use with --extra-augmented-file).",
+    )
+    parser.add_argument(
         "--n",
         type=int,
         default=9000,
@@ -185,12 +200,20 @@ def main():
     emotions = parse_emotions(args.emotions)
     base_path = os.path.abspath(os.path.expanduser(args.base_dataset))
     output_path = os.path.abspath(os.path.expanduser(args.output))
-    augmented_files = [
-        os.path.abspath(os.path.expanduser(path))
-        for path in (args.augmented_files or default_augmented_files(args.n, emotions))
-    ]
+    augmented_files = []
+    if args.augmented_files:
+        augmented_files = [
+            os.path.abspath(os.path.expanduser(path)) for path in args.augmented_files
+        ]
+    elif not args.no_template_aug:
+        augmented_files = default_augmented_files(args.n, emotions)
 
-    if args.generate_missing and not args.augmented_files:
+    if args.extra_augmented_files:
+        augmented_files.extend(
+            os.path.abspath(os.path.expanduser(path)) for path in args.extra_augmented_files
+        )
+
+    if args.generate_missing and not args.augmented_files and not args.no_template_aug:
         maybe_generate_missing(augmented_files, n=args.n, seed=args.seed, emotions=emotions)
 
     print(f"Base dataset: {base_path}")
