@@ -12,6 +12,7 @@ The codebase has been simplified to use a single training script, `scripts/train
 - `scripts/score_pseudo_labels.py`: score pseudo-labels with seed model confidence
 - `scripts/filter_by_confidence.py`: filter scored dataset by confidence threshold
 - `scripts/run_confidence_experiments.py`: confidence threshold training experiments
+- `scripts/audit_datasets.py`: dataset inventory, label stats, and merge/split cross-checks
 - `scripts/predict.py`: inference script for loading a trained model and running predictions
 - `config/paths.py`: path configuration for datasets, models, and output directories
 - `augmentations/fear_augmenter.py`: utilities related to fear-class augmentation
@@ -110,6 +111,18 @@ python scripts/train.py --mode full_8label_all_aug --batch-size 16 --max-length 
 ## Outputs
 
 Trained models are stored under `Models/`, while experiment-specific runs are written to `outputs/`. Each run saves metadata and evaluation results to make comparisons between experiments easier.
+
+## Dataset Audit
+
+Before updating thesis tables, verify row counts, label distributions, duplicates, and merge integrity:
+
+```bash
+python scripts/audit_datasets.py
+python scripts/audit_datasets.py --group ablation
+python scripts/audit_datasets.py --strict
+```
+
+The script prints a **Table 1 helper** with A0–A5 row counts from disk and validation checks (e.g. A5 = A4 + BT files, confidence split sums).
 
 ## Ablation Study
 
