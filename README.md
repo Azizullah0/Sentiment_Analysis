@@ -10,15 +10,18 @@ The codebase has been simplified to use a single training script, `scripts/train
 - `scripts/run_ablation.py`: ablation experiment runner (one run at a time)
 - `scripts/run_multiseed.py`: multi-seed stability runner (A4, seeds 41–45)
 - `scripts/run_backtranslation.py`: back-translation pipeline (spot-check → generate → merge → A5)
+- `scripts/merge_augmented_datasets.py`: merge template/BT augmentations into ablation CSVs
 - `scripts/score_pseudo_labels.py`: score pseudo-labels with seed model confidence
-- `scripts/filter_by_confidence.py`: filter scored dataset by confidence threshold
+- `scripts/prepare_confidence_splits.py`: fixed holdout + filtered train pools (C0–C3)
 - `scripts/run_confidence_experiments.py`: confidence threshold training experiments
+- `scripts/evaluate_holdout.py`: re-evaluate a trained model on the fixed holdout
 - `scripts/audit_datasets.py`: dataset inventory, label stats, and merge/split cross-checks
 - `scripts/predict.py`: inference script for loading a trained model and running predictions
 - `config/paths.py`: path configuration for datasets, models, and output directories
-- `augmentations/fear_augmenter.py`: utilities related to fear-class augmentation
+- `augmentations/fear_augmenter.py`: Fear template augmentation
+- `augmentations/emotion_augmenter.py`: Surprise, Anger, Disgust template augmentation
 - `augmentations/back_translation_augmenter.py`: NLLB round-trip augmentation from 4K gold seed
-- `utils/dataset_utils.py`: helper functions for dataset preparation
+- `docs/appendix_reproducibility.md`: full command reference for thesis experiments
 
 ## Requirements
 
@@ -179,6 +182,8 @@ python scripts/run_multiseed.py --run-id A4 --aggregate-only   # re-summarize ex
 
 Summary table: `outputs/ablation/A4/multiseed_summary.json` (mean ± std for accuracy, Macro-F1, Fear F1).
 
+**Completed run (July 2026):** mean accuracy 86.16% ± 0.05 pp, mean Macro-F1 0.857 ± 0.001, mean Fear F1 0.947 ± 0.003 (seeds 41–45). Anchor A4 (86.12%, 0.857) falls within the observed range.
+
 Single manual re-run with a custom seed:
 
 ```bash
@@ -242,7 +247,7 @@ python augmentations/back_translation_augmenter.py --emotion surprise --spot-che
 
 Validate self-training quality by scoring the 400K pseudo-labeled dataset, filtering the **training pool only**, and evaluating on a **fixed unfiltered holdout** (same 20% split as ablation, seed=42).
 
-**Important:** Do not train and test on the same filtered CSV — that inflates metrics (~98% accuracy). Use `--valid-eval` (default).
+**Important:** Training always uses the fixed unfiltered holdout for evaluation. Do not train and test on the same filtered CSV — that inflates metrics (~98% accuracy).
 
 **Step 1 — Score** (review printed diagnostics before continuing):
 
@@ -267,7 +272,7 @@ If these files already exist (verified by `audit_datasets.py`), **do not rebuild
 
 ```bash
 python scripts/run_confidence_experiments.py --list
-python scripts/run_confidence_experiments.py --run-id C1 --valid-eval
+python scripts/run_confidence_experiments.py --run-id C1
 ```
 
 **Re-evaluate existing C1 model** (no retrain needed):
@@ -286,8 +291,6 @@ C2/C3 were not trained. Higher thresholds would retain even fewer minority-class
 | C3 | `train_filtered_conf09.csv` | fixed holdout | Not trained |
 
 Results: `outputs/confidence/<run_id>/training_metadata.json` and optional `holdout_eval.json`.
-
-Legacy (invalid) mode: `--legacy-eval` — random split inside filtered CSV; do not report in thesis.
 
 ## Merging Augmented Datasets
 

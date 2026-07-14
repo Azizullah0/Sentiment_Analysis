@@ -17,6 +17,25 @@ Use these row counts as-is in the thesis. Do not assume monotonic growth across 
 
 Anchor results (unchanged): A1 — 85.75% accuracy, 0.836 Macro-F1; A4 — 86.12% accuracy, 0.857 Macro-F1.
 
+## Multi-seed A4 stability (July 2026)
+
+Fixed split `random_state=42`; training seeds 41–45. Source: `outputs/ablation/A4/multiseed_summary.json`.
+
+| Seed | Accuracy | Macro-F1 | Fear F1 |
+|-----:|---------:|---------:|--------:|
+| 41 | 86.21% | 0.858 | 0.949 |
+| 42 | 86.10% | 0.857 | 0.950 |
+| 43 | 86.17% | 0.857 | 0.946 |
+| 44 | 86.12% | 0.856 | 0.943 |
+| 45 | 86.22% | 0.858 | 0.944 |
+| **Mean ± std** | **86.16% ± 0.05%** | **0.857 ± 0.001** | **0.947 ± 0.003** |
+
+The anchor A4 result (86.12%, 0.857, 0.950 Fear F1) falls within the observed range. Re-aggregate without retraining:
+
+```bash
+python scripts/run_multiseed.py --run-id A4 --aggregate-only
+```
+
 ## Data quality and limitations (Methods or Limitations)
 
 The pseudo-labeled base dataset (A0) contains 15,215 duplicate normalized texts (3.9% of rows). These duplicates are inherited by A1 and by the confidence experiment train/holdout splits derived from A0. Duplicate texts may slightly overweight repeated samples during training on A0, A1, and confidence runs C0–C3. Merges for A2–A5 apply deduplication on normalized text when combining template and back-translation augmentations, so those datasets are duplicate-free.
@@ -42,7 +61,7 @@ Do not rebuild splits if these files already exist on disk:
 C1 was trained and evaluated on the fixed unfiltered holdout. C2/C3 were not run after C1 failed (75.56% acc, 0.648 Macro-F1, 0.248 Fear F1 vs A4: 86.12%, 0.857, 0.950).
 
 ```bash
-python scripts/run_confidence_experiments.py --run-id C1 --valid-eval
+python scripts/run_confidence_experiments.py --run-id C1
 python scripts/evaluate_holdout.py --model outputs/confidence/C1
 ```
 

@@ -164,7 +164,7 @@ def print_diagnostics(df, label_column):
         print(f"  conf >= {threshold} & agrees: {retained:,} rows ({retained / total:.1%})")
 
     print(f"\n{'=' * 60}")
-    print("Review the summary above before running filter_by_confidence.py.")
+    print("Review the summary above before running prepare_confidence_splits.py.")
     print(f"{'=' * 60}")
 
 
