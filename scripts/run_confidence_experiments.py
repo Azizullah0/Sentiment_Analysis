@@ -4,8 +4,12 @@ Confidence threshold training experiments.
 Valid evaluation (default): train on filtered train-pool only, evaluate on fixed
 unfiltered holdout from the original 400K (same seed=42 split as ablation).
 
+When train_pool / eval_holdout / train_filtered_conf*.csv already exist (see
+audit_datasets.py or docs/thesis_dataset_notes.md), train directly without
+--prepare-splits so splits stay aligned with completed ablation work.
+
 Example:
-    python scripts/prepare_confidence_splits.py
+    python scripts/run_confidence_experiments.py --run-id C0 --valid-eval
     python scripts/run_confidence_experiments.py --run-id C1 --valid-eval
     python scripts/evaluate_holdout.py --model outputs/confidence/C1
 """
