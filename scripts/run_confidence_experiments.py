@@ -1,16 +1,16 @@
 """
 Confidence threshold training experiments.
 
-Valid evaluation (default): train on filtered train-pool only, evaluate on fixed
-unfiltered holdout from the original 400K (same seed=42 split as ablation).
+Train on filtered train-pool only; evaluate on fixed unfiltered holdout from
+the original 400K (same seed=42 split as ablation).
 
 When train_pool / eval_holdout / train_filtered_conf*.csv already exist (see
 audit_datasets.py or docs/thesis_dataset_notes.md), train directly without
 --prepare-splits so splits stay aligned with completed ablation work.
 
 Example:
-    python scripts/run_confidence_experiments.py --run-id C0 --valid-eval
-    python scripts/run_confidence_experiments.py --run-id C1 --valid-eval
+    python scripts/run_confidence_experiments.py --run-id C0
+    python scripts/run_confidence_experiments.py --run-id C1
     python scripts/evaluate_holdout.py --model outputs/confidence/C1
 """
 
@@ -25,7 +25,6 @@ from config.paths import PATHS, train_filtered_confidence_path
 
 
 TRAIN_SCRIPT = os.path.join(os.path.dirname(__file__), "train.py")
-FILTER_SCRIPT = os.path.join(os.path.dirname(__file__), "filter_by_confidence.py")
 SCORE_SCRIPT = os.path.join(os.path.dirname(__file__), "score_pseudo_labels.py")
 PREPARE_SCRIPT = os.path.join(os.path.dirname(__file__), "prepare_confidence_splits.py")
 EVAL_HOLDOUT_SCRIPT = os.path.join(os.path.dirname(__file__), "evaluate_holdout.py")
@@ -69,18 +68,6 @@ def parse_args():
     parser.add_argument("--run-id", choices=sorted(CONFIDENCE_RUNS.keys()), help="Run one experiment.")
     parser.add_argument("--list", action="store_true", help="List all confidence experiments.")
     parser.add_argument(
-        "--valid-eval",
-        action="store_true",
-        default=True,
-        help="Use fixed holdout eval (default: on). Train on filtered train pool only.",
-    )
-    parser.add_argument(
-        "--legacy-eval",
-        dest="valid_eval",
-        action="store_false",
-        help="Old behaviour: random split inside filtered CSV (inflated metrics).",
-    )
-    parser.add_argument(
         "--prepare-splits",
         action="store_true",
         help="Run prepare_confidence_splits.py before training (requires scored CSV).",
@@ -98,17 +85,11 @@ def confidence_output_dir(run_id):
     return os.path.join(PATHS["confidence_outputs"], run_id)
 
 
-def train_dataset_path(run_config, threshold_override=None, valid_eval=True):
+def train_dataset_path(run_config, threshold_override=None):
     threshold = threshold_override if threshold_override is not None else run_config.get("threshold")
-    if valid_eval:
-        if threshold is None:
-            return PATHS["train_pool_original"]
-        return train_filtered_confidence_path(threshold)
     if threshold is None:
-        return PATHS["Combined_Labeled_Dataset"]
-    from config.paths import confidence_filtered_path
-
-    return confidence_filtered_path(threshold)
+        return PATHS["train_pool_original"]
+    return train_filtered_confidence_path(threshold)
 
 
 def build_score_command():
@@ -122,9 +103,9 @@ def build_prepare_command(thresholds):
     return cmd
 
 
-def build_train_command(run_id, train_path, valid_eval):
+def build_train_command(run_id, train_path):
     output_dir = confidence_output_dir(run_id)
-    command = [
+    return [
         sys.executable,
         TRAIN_SCRIPT,
         "--mode",
@@ -135,11 +116,10 @@ def build_train_command(run_id, train_path, valid_eval):
         output_dir,
         "--final-model-dir",
         output_dir,
+        "--eval-dataset-path",
+        PATHS["eval_holdout_original"],
         *TRAIN_HYPERPARAMS,
     ]
-    if valid_eval:
-        command.extend(["--eval-dataset-path", PATHS["eval_holdout_original"]])
-    return command
 
 
 def build_holdout_eval_command(run_id):
@@ -157,15 +137,12 @@ def run_command(command):
     subprocess.run(command, check=True)
 
 
-def print_run_summary(run_id, run_config, train_path, valid_eval):
+def print_run_summary(run_id, run_config, train_path):
     print(f"\n{'=' * 60}")
     print(f"Run ID: {run_id}")
     print(f"Description: {run_config['description']}")
     print(f"Train dataset: {train_path}")
-    if valid_eval:
-        print(f"Eval dataset:  {PATHS['eval_holdout_original']} (fixed unfiltered holdout)")
-    else:
-        print("Eval: random split inside train CSV (legacy — metrics may be inflated)")
+    print(f"Eval dataset:  {PATHS['eval_holdout_original']} (fixed unfiltered holdout)")
     print(f"Output dir: {confidence_output_dir(run_id)}")
     print(f"{'=' * 60}")
 
@@ -190,16 +167,16 @@ def show_metadata_hint(run_id):
 
 
 def list_runs():
-    print("\nConfidence threshold experiments (valid-eval default):\n")
+    print("\nConfidence threshold experiments:\n")
     for run_id, run_config in CONFIDENCE_RUNS.items():
-        train_path = train_dataset_path(run_config, valid_eval=True)
+        train_path = train_dataset_path(run_config)
         print(f"  {run_id}: {run_config['description']}")
         print(f"       train: {train_path}")
         print(f"       eval:  {PATHS['eval_holdout_original']}")
     print("\nWorkflow:")
     print("  1. python scripts/score_pseudo_labels.py")
     print("  2. python scripts/prepare_confidence_splits.py")
-    print("  3. python scripts/run_confidence_experiments.py --run-id C1 --valid-eval")
+    print("  3. python scripts/run_confidence_experiments.py --run-id C1")
     print("\nRe-evaluate existing model without retraining:")
     print("  python scripts/evaluate_holdout.py --model outputs/confidence/C1")
 
@@ -212,13 +189,13 @@ def thresholds_for_prepare(threshold_override, run_id):
     return [0.7, 0.8, 0.9]
 
 
-def execute_run(run_id, valid_eval, prepare_splits, build_scored, threshold_override, dry_run=False):
+def execute_run(run_id, prepare_splits, build_scored, threshold_override, dry_run=False):
     run_config = CONFIDENCE_RUNS[run_id]
-    train_path = train_dataset_path(run_config, threshold_override, valid_eval)
+    train_path = train_dataset_path(run_config, threshold_override)
 
-    print_run_summary(run_id, run_config, train_path, valid_eval)
+    print_run_summary(run_id, run_config, train_path)
 
-    if valid_eval and (prepare_splits or build_scored):
+    if prepare_splits or build_scored:
         if build_scored:
             score_command = build_score_command()
             print_command("Score command:", score_command)
@@ -231,23 +208,22 @@ def execute_run(run_id, valid_eval, prepare_splits, build_scored, threshold_over
             run_command(prepare_command)
 
     if not dry_run and not os.path.exists(train_path):
-        hint = " Run with --prepare-splits after score_pseudo_labels.py."
-        if not valid_eval and run_config.get("threshold"):
-            hint = " Run filter_by_confidence.py first."
-        raise FileNotFoundError(f"Train dataset not found: {train_path}.{hint}")
+        raise FileNotFoundError(
+            f"Train dataset not found: {train_path}. "
+            "Run prepare_confidence_splits.py first (or pass --prepare-splits)."
+        )
 
-    if valid_eval and not dry_run and not os.path.exists(PATHS["eval_holdout_original"]):
+    if not dry_run and not os.path.exists(PATHS["eval_holdout_original"]):
         raise FileNotFoundError(
             f"Eval holdout not found: {PATHS['eval_holdout_original']}\n"
             "Run prepare_confidence_splits.py first (or pass --prepare-splits)."
         )
 
-    train_command = build_train_command(run_id, train_path, valid_eval)
+    train_command = build_train_command(run_id, train_path)
     print_command("Train command:", train_command)
 
     if dry_run:
-        if valid_eval:
-            print_command("Optional holdout re-eval:", build_holdout_eval_command(run_id))
+        print_command("Optional holdout re-eval:", build_holdout_eval_command(run_id))
         print("\nDry run only — commands not executed.")
         return
 
@@ -268,7 +244,6 @@ def main():
     if args.run_id:
         execute_run(
             args.run_id,
-            valid_eval=args.valid_eval,
             prepare_splits=args.prepare_splits,
             build_scored=args.build_scored,
             threshold_override=args.threshold,
@@ -276,18 +251,17 @@ def main():
         )
         return
 
-    print("Confidence experiment dry-run (valid-eval):\n")
+    print("Confidence experiment dry-run:\n")
     for run_id, run_config in CONFIDENCE_RUNS.items():
-        train_path = train_dataset_path(run_config, valid_eval=args.valid_eval)
-        print_run_summary(run_id, run_config, train_path, args.valid_eval)
-        if args.valid_eval:
-            print_command("Prepare splits:", build_prepare_command([0.7, 0.8, 0.9]))
-        print_command("Train command:", build_train_command(run_id, train_path, args.valid_eval))
+        train_path = train_dataset_path(run_config)
+        print_run_summary(run_id, run_config, train_path)
+        print_command("Prepare splits:", build_prepare_command([0.7, 0.8, 0.9]))
+        print_command("Train command:", build_train_command(run_id, train_path))
 
     print("\nStart:")
     print("  python scripts/score_pseudo_labels.py")
     print("  python scripts/prepare_confidence_splits.py")
-    print("  python scripts/run_confidence_experiments.py --run-id C1 --valid-eval")
+    print("  python scripts/run_confidence_experiments.py --run-id C1")
 
 
 if __name__ == "__main__":

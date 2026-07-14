@@ -64,13 +64,11 @@ Summary: `outputs/ablation/A4/multiseed_summary.json`
 ```bash
 python scripts/score_pseudo_labels.py
 python scripts/prepare_confidence_splits.py --threshold 0.7 0.8 0.9
-python scripts/run_confidence_experiments.py --run-id C1 --valid-eval
+python scripts/run_confidence_experiments.py --run-id C1
 python scripts/evaluate_holdout.py --model outputs/confidence/C1
 ```
 
-C1 was trained and validated on the fixed unfiltered holdout. C2/C3 were not run after C1's catastrophic holdout performance.
-
-Use `--valid-eval` (default). Do not evaluate on a filtered test set.
+C1 was trained and validated on the fixed unfiltered holdout. C2/C3 were not run after C1's catastrophic holdout performance. Always evaluate on the fixed holdout — never on a filtered test set.
 
 ## Output locations
 

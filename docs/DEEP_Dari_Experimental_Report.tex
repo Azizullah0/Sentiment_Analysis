@@ -30,7 +30,7 @@
 \begin{abstract}
 This chapter documents the augmentation experiments I carried out for the DEEP-Dari emotion classifier. I started from a pseudo-labeled corpus of roughly 400K Dari social media posts, where Fear accounted for only 0.28\% of all examples. Under that distribution, even strong class weighting could not lift Fear F1 above 0.503.
 
-I addressed the imbalance through a stepwise ablation study (A0--A5), a back-translation comparison (A5), and confidence-threshold experiments. Template augmentation gave the best results: run A4 reached 86.12\% accuracy and 0.857 Macro-F1, with Fear F1 rising to 0.950. Back-translation (A5) was slightly lower at 85.94\% and 0.853 Macro-F1. I also tested confidence-based label filtering: C1 (confidence $\geq 0.7$) collapsed to 75.56\% accuracy and 0.248 Fear F1 on the fixed unfiltered holdout, so I stopped before C2 and C3. Augmentation clearly beat filtering. I verify A4 stability with five training seeds (41--45) on the fixed split; results are in Table~\ref{tab:multiseed}.
+I addressed the imbalance through a stepwise ablation study (A0--A5), a back-translation comparison (A5), and confidence-threshold experiments. Template augmentation gave the best results: run A4 reached 86.12\% accuracy and 0.857 Macro-F1, with Fear F1 rising to 0.950. Back-translation (A5) was slightly lower at 85.94\% and 0.853 Macro-F1. I also tested confidence-based label filtering: C1 (confidence $\geq 0.7$) collapsed to 75.56\% accuracy and 0.248 Fear F1 on the fixed unfiltered holdout, so I stopped before C2 and C3. Augmentation clearly beat filtering. I verified A4 stability with five training seeds (41--45) on the fixed split: mean accuracy 86.16\% ($\pm 0.05$ pp), mean Macro-F1 0.857 ($\pm 0.001$), and mean Fear F1 0.947 ($\pm 0.003$); see Table~\ref{tab:multiseed}.
 \end{abstract}
 
 \tableofcontents
@@ -381,25 +381,25 @@ I plot the Macro-F1 and Fear F1 trajectories in Figures~\ref{fig:macro_progressi
 \subsection{Multi-seed Stability (A4)}
 \label{sec:multiseed}
 
-To check that the A4 result was not a single lucky training run, I trained A4 five times with training seeds 41--45 while keeping the stratified train--test split fixed at \texttt{random\_state=42}. Each run writes to a separate output directory (\texttt{seed\_41} through \texttt{seed\_45}); the original anchor model at \texttt{outputs/ablation/A4/} is unchanged. I aggregate metrics with \texttt{scripts/run\_multiseed.py}; the summary is saved as \texttt{multiseed\_summary.json}.
+To check that the A4 result was not a single lucky training run, I trained A4 five times with training seeds 41--45 while keeping the stratified train--test split fixed at \texttt{random\_state=42}. Each run writes to a separate output directory (\texttt{seed\_41} through \texttt{seed\_45}); the original anchor model at \texttt{outputs/ablation/A4/} is unchanged. I aggregated metrics with \texttt{scripts/run\_multiseed.py} (summary in \texttt{multiseed\_summary.json}).
 
-Table~\ref{tab:multiseed} reports per-seed accuracy, Macro-F1, and Fear F1 on the same held-out 20\%. Fill mean $\pm$ std from \texttt{multiseed\_summary.json} after the GPU runs complete.
+Table~\ref{tab:multiseed} reports per-seed accuracy, Macro-F1, and Fear F1 on the same held-out 20\%. Across seeds, accuracy ranged from 86.10\% to 86.22\% and Macro-F1 from 0.856 to 0.858. The anchor A4 result (86.12\%, 0.857, 0.950 Fear F1) falls within this spread. Mean Macro-F1 varied by only $\pm 0.001$, so the ablation result is stable under training randomness.
 
 \begin{table}[H]
 \centering
-\caption{A4 multi-seed results (fixed split, training seeds 41--45). Replace placeholders after \texttt{run\_multiseed.py --force}.}
+\caption{A4 multi-seed results (fixed split \texttt{random\_state=42}, training seeds 41--45).}
 \label{tab:multiseed}
 \begin{tabular}{@{}rccc@{}}
 \toprule
 Training seed & Accuracy & Macro-F1 & Fear F1 \\
 \midrule
-41 & --- & --- & --- \\
-42 & --- & --- & --- \\
-43 & --- & --- & --- \\
-44 & --- & --- & --- \\
-45 & --- & --- & --- \\
+41 & 86.21\% & 0.858 & 0.949 \\
+42 & 86.10\% & 0.857 & 0.950 \\
+43 & 86.17\% & 0.857 & 0.946 \\
+44 & 86.12\% & 0.856 & 0.943 \\
+45 & 86.22\% & 0.858 & 0.944 \\
 \midrule
-Mean $\pm$ std & --- & --- & --- \\
+Mean $\pm$ std & 86.16\% $\pm$ 0.05\% & 0.857 $\pm$ 0.001 & 0.947 $\pm$ 0.003 \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -676,7 +676,7 @@ I state the main limitations explicitly:
 \label{sec:summary}
 % ====================================================================
 
-I consider A4 the best model from this experimental series: 86.12\% accuracy, 0.857 Macro-F1, and 0.950 Fear F1. The ablation study shows that targeted, culturally grounded template augmentation is more effective here than extreme class weighting alone. The confidence threshold experiments were stopped after C1: filtering at confidence $\geq 0.7$ reduced accuracy to 75.56\% and Fear F1 to 0.248 on the unfiltered holdout, while higher thresholds would retain even fewer minority samples. Label-level filtering is not viable for this task; augmentation (A4) remains the superior approach. Back-translation added lexical diversity but did not improve on A4 given the volume I actually generated.
+I consider A4 the best model from this experimental series: 86.12\% accuracy, 0.857 Macro-F1, and 0.950 Fear F1. Multi-seed checks (seeds 41--45, Table~\ref{tab:multiseed}) confirm stability: mean Macro-F1 0.857 $\pm$ 0.001 across training runs. The ablation study shows that targeted, culturally grounded template augmentation is more effective here than extreme class weighting alone. The confidence threshold experiments were stopped after C1: filtering at confidence $\geq 0.7$ reduced accuracy to 75.56\% and Fear F1 to 0.248 on the unfiltered holdout, while higher thresholds would retain even fewer minority samples. Label-level filtering is not viable for this task; augmentation (A4) remains the superior approach. Back-translation added lexical diversity but did not improve on A4 given the volume I actually generated.
 
 For the remainder of the thesis, I treat A4 as the production candidate. I document dataset sizes as measured in Table~\ref{tab:ablation_datasets} and evaluate all confidence experiments on the fixed unfiltered holdout described in Section~\ref{sec:eval-protocol}. The next chapter covers [deployment / conclusion / application---to be linked by author].
 

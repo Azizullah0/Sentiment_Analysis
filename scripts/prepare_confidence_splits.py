@@ -164,7 +164,7 @@ def main():
         print(f"  Output: {out_path}")
 
     print("\nTrain with fixed holdout:")
-    print("  python scripts/run_confidence_experiments.py --run-id C1 --valid-eval")
+    print("  python scripts/run_confidence_experiments.py --run-id C1")
 
 
 if __name__ == "__main__":

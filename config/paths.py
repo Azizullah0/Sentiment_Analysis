@@ -84,7 +84,6 @@ BASE_PATH = STORAGE_ROOT
 for path in [
     os.path.join(STORAGE_ROOT, "Models"),
     os.path.join(STORAGE_ROOT, "outputs"),
-    os.path.join(DATA_ROOT, "datasets"),
     os.path.join(DATA_ROOT, "Data/processed"),
 ]:
     os.makedirs(path, exist_ok=True)
@@ -136,11 +135,9 @@ PATHS = {
     ),
     "eval_holdout_original": os.path.join(DATA_ROOT, "Data/processed/eval_holdout_original.csv"),
     "train_pool_original": os.path.join(DATA_ROOT, "Data/processed/train_pool_original.csv"),
-    "augmented_data": os.path.join(DATA_ROOT, "Data/processed/fear_augmented.csv"),
     "Labeled_4K": os.path.join(DATA_ROOT, "Data/processed/Labeled_4K.csv"),
     "bt_spotcheck_dir": os.path.join(DATA_ROOT, "Data/processed"),
     "augmented_afghan_fear_9000": os.path.join(DATA_ROOT, "Data/processed/augmented_afghan_fear_9000.csv"),
-    "datasets": os.path.join(DATA_ROOT, "datasets"),
     "outputs": os.path.join(STORAGE_ROOT, "outputs"),
 }
 
@@ -150,14 +147,6 @@ MODEL_CONFIG = {
     "learning_rate": 2e-5,
     "num_train_epochs": 5,
 }
-
-
-def confidence_filtered_path(threshold, output_dir=None):
-    """Return path for a confidence-filtered dataset CSV (legacy: full scored set)."""
-    directory = output_dir or os.path.join(DATA_ROOT, "Data/processed")
-    threshold_label = str(threshold).replace(".", "")
-    filename = f"Combined_Labeled_Dataset_conf{threshold_label}.csv"
-    return os.path.join(directory, filename)
 
 
 def train_filtered_confidence_path(threshold, output_dir=None):
