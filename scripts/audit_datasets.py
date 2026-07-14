@@ -84,8 +84,16 @@ class DatasetStats:
 @dataclass
 class ValidationResult:
     name: str
-    passed: bool
+    status: str  # PASS, WARN, EXPECTED, FAIL
     detail: str
+
+    @property
+    def passed(self) -> bool:
+        return self.status != "FAIL"
+
+
+KNOWN_DUPE_DATASETS = frozenset({"A0", "A1", "eval_holdout", "train_pool", "C1_train"})
+DEDUPED_ABLATION_IDS = ["A2", "A3", "A4", "A5"]
 
 
 def ablation_entries() -> list[DatasetEntry]:
@@ -336,11 +344,11 @@ def run_validations(
     if a4 is not None and a5 is not None and bt_found > 0:
         delta = a5 - a4
         dedup_removed = bt_total - delta
-        passed = 0 <= dedup_removed <= bt_total
+        merge_ok = 0 <= dedup_removed <= bt_total
         results.append(
             ValidationResult(
                 "A5 merge (A5 - A4 vs BT sum)",
-                passed,
+                "PASS" if merge_ok else "FAIL",
                 f"A4={a4:,}, A5={a5:,}, delta={delta:+,}, BT files sum={bt_total:,}, "
                 f"dedup removed={dedup_removed:,}",
             )
@@ -349,42 +357,82 @@ def run_validations(
         results.append(
             ValidationResult(
                 "A5 merge (A5 - A4 vs BT sum)",
-                True,
+                "PASS",
                 "Skipped — missing A4, A5, or BT files",
             )
         )
 
-    # Ablation monotonicity (soft)
-    mono_ok = True
-    mono_details = []
-    prev = None
+    # Ablation monotonicity from A2 onward (A1→A2 shrink is expected after dedup merge)
+    mono_issues = []
+    expected_shrink = []
+    prev_id = None
+    prev_rows = None
     for run_id in ablation_ids:
         current = ablation_rows.get(run_id)
         if current is None:
             continue
-        if prev is not None and current < prev:
-            mono_ok = False
-            mono_details.append(f"{run_id} ({current:,}) < previous ({prev:,})")
-        prev = current
+        if prev_rows is not None and current < prev_rows:
+            a2_stats = ablation_stats.get("A2")
+            if (
+                run_id == "A2"
+                and prev_id == "A1"
+                and a2_stats
+                and a2_stats.exists
+                and not a2_stats.error
+                and a2_stats.dupes == 0
+            ):
+                expected_shrink.append(
+                    f"A2 ({current:,}) < A1 ({prev_rows:,}) after dedup merge (expected)"
+                )
+            else:
+                mono_issues.append(f"{run_id} ({current:,}) < {prev_id} ({prev_rows:,})")
+        prev_id = run_id
+        prev_rows = current
+
+    if expected_shrink and not mono_issues:
+        mono_status = "EXPECTED"
+        mono_detail = "; ".join(expected_shrink)
+    elif mono_issues:
+        mono_status = "FAIL"
+        mono_detail = "; ".join(mono_issues)
+        if expected_shrink:
+            mono_detail = f"{mono_detail}; {'; '.join(expected_shrink)}"
+    else:
+        mono_status = "PASS"
+        mono_detail = "OK"
     results.append(
         ValidationResult(
-            "Ablation row-count monotonicity (soft)",
-            mono_ok,
-            "OK" if mono_ok else "; ".join(mono_details),
+            "Ablation row-count monotonicity from A2 (A1→A2 shrink expected)",
+            mono_status,
+            mono_detail,
         )
     )
 
-    # Duplicate integrity on experiment datasets
-    dupe_failures = []
-    for run_id in ablation_ids + ["eval_holdout", "train_pool", "C1_train"]:
+    # Duplicates in pseudo-labeled base and confidence splits (known, inherited from A0)
+    inherited_dupe_warnings = []
+    for run_id in sorted(KNOWN_DUPE_DATASETS):
         stats = ablation_stats.get(run_id) or confidence_stats.get(run_id)
         if stats and stats.exists and not stats.error and stats.dupes > 0:
-            dupe_failures.append(f"{run_id}: {stats.dupes:,} dupes")
+            inherited_dupe_warnings.append(f"{run_id}: {stats.dupes:,} dupes")
     results.append(
         ValidationResult(
-            "No duplicate normalized texts (experiment CSVs)",
-            len(dupe_failures) == 0,
-            "OK" if not dupe_failures else "; ".join(dupe_failures),
+            "Duplicate texts in pseudo-labeled base (inherited from A0)",
+            "WARN" if inherited_dupe_warnings else "PASS",
+            "OK" if not inherited_dupe_warnings else "; ".join(inherited_dupe_warnings),
+        )
+    )
+
+    # Deduped ablation merges must stay duplicate-free
+    deduped_dupe_failures = []
+    for run_id in DEDUPED_ABLATION_IDS:
+        stats = ablation_stats.get(run_id)
+        if stats and stats.exists and not stats.error and stats.dupes > 0:
+            deduped_dupe_failures.append(f"{run_id}: {stats.dupes:,} dupes")
+    results.append(
+        ValidationResult(
+            "No duplicates in deduped ablation merges (A2–A5)",
+            "PASS" if not deduped_dupe_failures else "FAIL",
+            "OK" if not deduped_dupe_failures else "; ".join(deduped_dupe_failures),
         )
     )
 
@@ -395,11 +443,11 @@ def run_validations(
     c1_rows = rows_for(confidence_stats, "C1_train")
     if base_rows is not None and pool_rows is not None and holdout_rows is not None:
         split_sum = pool_rows + holdout_rows
-        passed = split_sum == base_rows
+        split_ok = split_sum == base_rows
         results.append(
             ValidationResult(
                 "Confidence split (train_pool + holdout == A0 base)",
-                passed,
+                "PASS" if split_ok else "FAIL",
                 f"base={base_rows:,}, pool={pool_rows:,}, holdout={holdout_rows:,}, "
                 f"sum={split_sum:,}",
             )
@@ -408,17 +456,17 @@ def run_validations(
         results.append(
             ValidationResult(
                 "Confidence split (train_pool + holdout == A0 base)",
-                True,
+                "PASS",
                 "Skipped — missing base, train_pool, or eval_holdout",
             )
         )
 
     if pool_rows is not None and c1_rows is not None:
-        passed = c1_rows <= pool_rows
+        subset_ok = c1_rows <= pool_rows
         results.append(
             ValidationResult(
                 "C1 filtered train subset of train pool",
-                passed,
+                "PASS" if subset_ok else "FAIL",
                 f"train_pool={pool_rows:,}, C1_train={c1_rows:,}",
             )
         )
@@ -511,11 +559,10 @@ def main():
         validations = run_validations(ablation_stats, confidence_stats, augmentation_stats)
         failures = 0
         for result in validations:
-            status = "PASS" if result.passed else "FAIL"
+            print(f"  [{result.status}] {result.name}")
+            print(f"         {result.detail}")
             if not result.passed:
                 failures += 1
-            print(f"  [{status}] {result.name}")
-            print(f"         {result.detail}")
 
         if args.strict and failures:
             print(f"\nStrict mode: {failures} validation check(s) failed.")

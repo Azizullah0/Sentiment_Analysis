@@ -34,6 +34,7 @@ from transformers import (
     EarlyStoppingCallback,
     Trainer,
     TrainingArguments,
+    set_seed,
 )
 
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
@@ -128,7 +129,18 @@ def parse_args():
     parser.add_argument("--warmup-steps", type=int, help="Override warmup steps.")
     parser.add_argument("--save-total-limit", type=int, help="Override number of checkpoints kept.")
     parser.add_argument("--test-size", type=float, default=0.2, help="Train/test split ratio.")
-    parser.add_argument("--random-state", type=int, default=42, help="Random seed for train/test split.")
+    parser.add_argument(
+        "--random-state",
+        type=int,
+        default=42,
+        help="Random seed for train/test split only (sklearn stratified split).",
+    )
+    parser.add_argument(
+        "--seed",
+        type=int,
+        default=42,
+        help="Training seed for model init, batch order, and Trainer RNG (multi-seed stability).",
+    )
     parser.add_argument("--logging-steps", type=int, help="Override logging frequency.")
     parser.add_argument("--early-stopping-patience", type=int, help="Override early stopping patience.")
     parser.add_argument(
@@ -461,6 +473,7 @@ def resolve_runtime_config(args):
         config["padding"] = False
     if args.eval_dataset_path:
         config["eval_dataset_path"] = os.path.abspath(os.path.expanduser(args.eval_dataset_path))
+    config["seed"] = args.seed
 
     return config
 
@@ -673,6 +686,8 @@ def build_training_args(config):
         training_kwargs["warmup_steps"] = config["warmup_steps"]
     if config["dataloader_num_workers"] is not None:
         training_kwargs["dataloader_num_workers"] = config["dataloader_num_workers"]
+    if config.get("seed") is not None:
+        training_kwargs["seed"] = config["seed"]
 
     return TrainingArguments(**standardize_strategy_key(training_kwargs))
 
@@ -708,6 +723,8 @@ def main():
     if config.get("eval_dataset_path"):
         print(f"Eval dataset path: {config['eval_dataset_path']} (fixed holdout)")
     print(f"Base model: {config['base_model']}")
+    print(f"Split random_state: {args.random_state} | Training seed: {args.seed}")
+    set_seed(args.seed)
 
     ensure_output_paths(config)
     train_df = load_dataframe(config)
@@ -767,6 +784,8 @@ def main():
         "training_type": config["training_type"],
         "mode": args.mode,
         "base_model": config["base_model"],
+        "split_random_state": args.random_state,
+        "training_seed": args.seed,
         "training_date": datetime.datetime.now().isoformat(),
         "dataset_path": config["dataset_path"],
         "eval_dataset_path": config.get("eval_dataset_path"),

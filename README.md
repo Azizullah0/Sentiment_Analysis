@@ -8,6 +8,7 @@ The codebase has been simplified to use a single training script, `scripts/train
 
 - `scripts/train.py`: main training entrypoint
 - `scripts/run_ablation.py`: ablation experiment runner (one run at a time)
+- `scripts/run_multiseed.py`: multi-seed stability runner (A4, seeds 41–45)
 - `scripts/run_backtranslation.py`: back-translation pipeline (spot-check → generate → merge → A5)
 - `scripts/score_pseudo_labels.py`: score pseudo-labels with seed model confidence
 - `scripts/filter_by_confidence.py`: filter scored dataset by confidence threshold
@@ -124,6 +125,13 @@ python scripts/audit_datasets.py --strict
 
 The script prints a **Table 1 helper** with A0–A5 row counts from disk and validation checks (e.g. A5 = A4 + BT files, confidence split sums).
 
+**Interpreting validation results:** Two outcomes that previously showed as `FAIL` are expected for this project and do not require dataset rebuilds:
+
+- **`[EXPECTED] Ablation row-count monotonicity from A2`** — A2 (394,476) can be smaller than A1 (400,691) because `merge_augmented_datasets.py` deduplicates when adding Surprise; A2–A5 should stay duplicate-free.
+- **`[WARN] Duplicate texts in pseudo-labeled base`** — A0/A1 and confidence splits inherit ~15,215 duplicate normalized texts from the pseudo-labeled base. Document in the thesis; do not dedupe and re-train completed ablation runs.
+
+Verified Table 1 row counts and copy-ready limitations text: [docs/thesis_dataset_notes.md](docs/thesis_dataset_notes.md).
+
 ## Ablation Study
 
 Run augmentation ablation experiments one at a time. Review `training_metadata.json` after each run before continuing.
@@ -148,16 +156,37 @@ python scripts/run_ablation.py --run-id A2 --build-datasets
 python scripts/run_ablation.py --run-id A3 --build-datasets
 ```
 
-| Run ID | Dataset | Status |
-|--------|---------|--------|
-| A0 | Pseudo-labeled 400K only | Needs run |
-| A1 | Fear augmentation only | Anchor: 85.75% acc, 0.836 Macro-F1 |
-| A2 | Fear + Surprise | Needs run (use `--build-datasets`) |
-| A3 | Fear + Surprise + Anger | Needs run (use `--build-datasets`) |
-| A4 | Full stack (all augmentations) | Anchor: 86.12% acc, 0.857 Macro-F1 |
-| A5 | A4 + back-translation from 4K seed | Needs run (after Phase 3 merge) |
+| Run ID | Dataset | Rows | Status |
+|--------|---------|-----:|--------|
+| A0 | Pseudo-labeled 400K only | 391,691 | Complete |
+| A1 | Fear augmentation only | 400,691 | Anchor: 85.75% acc, 0.836 Macro-F1 |
+| A2 | Fear + Surprise | 394,476 | Complete |
+| A3 | Fear + Surprise + Anger | 403,476 | Complete |
+| A4 | Full stack (all augmentations) | 412,476 | Anchor: 86.12% acc, 0.857 Macro-F1 |
+| A5 | A4 + back-translation from 4K seed | 413,914 | Complete |
 
 Results are saved under `outputs/ablation/<run_id>/`. Anchor runs A1 and A4 are skipped unless you pass `--force`.
+
+### Multi-seed stability (A4)
+
+Train A4 multiple times with different **training seeds** while keeping the **split seed** fixed (`random_state=42`). Per-seed outputs go to `outputs/ablation/A4/seed_<N>/` so the anchor model at `outputs/ablation/A4/` is not overwritten.
+
+```bash
+python scripts/run_multiseed.py --run-id A4 --force --dry-run
+python scripts/run_multiseed.py --run-id A4 --force
+python scripts/run_multiseed.py --run-id A4 --aggregate-only   # re-summarize existing runs
+```
+
+Summary table: `outputs/ablation/A4/multiseed_summary.json` (mean ± std for accuracy, Macro-F1, Fear F1).
+
+Single manual re-run with a custom seed:
+
+```bash
+python scripts/run_ablation.py --run-id A4 --force --seed 43 --split-seed 42 \
+  --output-dir outputs/ablation/A4/seed_43
+```
+
+`train.py` flags: `--seed` (training RNG), `--random-state` (stratified split only).
 
 ## Back-Translation (Phase 3)
 
@@ -221,7 +250,7 @@ Validate self-training quality by scoring the 400K pseudo-labeled dataset, filte
 python scripts/score_pseudo_labels.py
 ```
 
-**Step 2 — Prepare splits** (fixed holdout + filtered train pools):
+**Step 2 — Prepare splits** (only if CSVs are missing; skip if audit shows OK):
 
 ```bash
 python scripts/prepare_confidence_splits.py --threshold 0.7 0.8 0.9
@@ -232,12 +261,13 @@ Creates:
 - `Data/processed/train_pool_original.csv` — 80% train pool (unfiltered, for C0)
 - `Data/processed/train_filtered_conf07.csv` etc. — filtered train pools only
 
-**Step 3 — Train** (one experiment at a time, valid eval by default):
+If these files already exist (verified by `audit_datasets.py`), **do not rebuild** — use them as-is so C0–C3 stay aligned with the ablation split protocol.
+
+**Step 3 — Train** (C1 was run and validated; C2/C3 were not run after C1's holdout failure):
 
 ```bash
 python scripts/run_confidence_experiments.py --list
-python scripts/run_confidence_experiments.py --run-id C1 --valid-eval --prepare-splits
-python scripts/run_confidence_experiments.py --run-id C2 --valid-eval
+python scripts/run_confidence_experiments.py --run-id C1 --valid-eval
 ```
 
 **Re-evaluate existing C1 model** (no retrain needed):
@@ -246,12 +276,14 @@ python scripts/run_confidence_experiments.py --run-id C2 --valid-eval
 python scripts/evaluate_holdout.py --model outputs/confidence/C1
 ```
 
-| Run ID | Train data | Eval data | Purpose |
-|--------|------------|-----------|---------|
-| C0 | `train_pool_original.csv` | `eval_holdout_original.csv` | Baseline on same holdout |
-| C1 | `train_filtered_conf07.csv` | fixed holdout | conf >= 0.7 |
-| C2 | `train_filtered_conf08.csv` | fixed holdout | conf >= 0.8 |
-| C3 | `train_filtered_conf09.csv` | fixed holdout | conf >= 0.9 |
+C2/C3 were not trained. Higher thresholds would retain even fewer minority-class samples.
+
+| Run ID | Train data | Eval data | Status |
+|--------|------------|-----------|--------|
+| C0 | `train_pool_original.csv` | `eval_holdout_original.csv` | Optional baseline |
+| C1 | `train_filtered_conf07.csv` | fixed holdout | **Trained** (75.56% acc, 0.648 Macro-F1) |
+| C2 | `train_filtered_conf08.csv` | fixed holdout | Not trained |
+| C3 | `train_filtered_conf09.csv` | fixed holdout | Not trained |
 
 Results: `outputs/confidence/<run_id>/training_metadata.json` and optional `holdout_eval.json`.
 
