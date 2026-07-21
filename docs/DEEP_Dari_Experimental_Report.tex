@@ -1,5 +1,15 @@
+% !TEX program = xelatex
 \documentclass[11pt,a4paper]{article}
-\usepackage[utf8]{inputenc}
+\usepackage{fontspec}
+\usepackage{polyglossia}
+\setdefaultlanguage{english}
+\setotherlanguage{persian}
+\IfFontExistsTF{Amiri}{%
+  \newfontfamily\persianfont[Script=Arabic,Scale=1.05]{Amiri}%
+}{%
+  \newfontfamily\persianfont[Script=Arabic,Scale=1.05]{Tahoma}%
+}
+\newcommand{\dariit}[1]{\textit{\begin{persian}#1\end{persian}}}
 \usepackage{amsmath}
 \usepackage{amsfonts}
 \usepackage{amssymb}
@@ -181,9 +191,9 @@ Fear was the most critical class. I structured Fear generation around three them
 
 Example frames I used:
 \begin{itemize}
-    \item \textit{ای خدا رحم کن، پاکستان هر لحظه ممکن است حمله کند، خدا رحم کنه}
-    \item \textit{می‌ترسم طالبان دوباره مردم را بکشند}
-    \item \textit{نگران آیندهٔ کودکان هستم که همه چیز خراب‌تر شود}
+    \item \dariit{ای خدا رحم کن، پاکستان هر لحظه ممکن است حمله کند، خدا رحم کنه}
+    \item \dariit{می‌ترسم طالبان دوباره مردم را بکشند}
+    \item \dariit{نگران آیندهٔ کودکان هستم که همه چیز خراب‌تر شود}
 \end{itemize}
 
 Translated emotion word lists from English would miss this domain specificity. Fear in my data is not abstract worry; it is tied to named actors and security events.
@@ -194,9 +204,9 @@ For Surprise, I used mirativity frames---the grammar of unexpected outcomes. I b
 
 Examples:
 \begin{itemize}
-    \item \textit{وای! قیمت‌ها یک‌شبه تغییر کرد}
-    \item \textit{چطور ممکن است حکومت دوباره وعدهٔ میان‌تهی بدهد؟}
-    \item \textit{باورم نمی‌شود، بازار واقعاً سقوط کرد}
+    \item \dariit{وای! قیمت‌ها یک‌شبه تغییر کرد}
+    \item \dariit{چطور ممکن است حکومت دوباره وعدهٔ میان‌تهی بدهد؟}
+    \item \dariit{باورم نمی‌شود، بازار واقعاً سقوط کرد}
 \end{itemize}
 
 \subsection{Anger Templates}
@@ -205,9 +215,9 @@ For Anger, I focused on blame assignment and collective frustration---patterns c
 
 Examples:
 \begin{itemize}
-    \item \textit{این مسئولین مردم را فراموش کرده‌اند}
-    \item \textit{به خدا قسم، زورمندان دیگر بس است}
-    \item \textit{چرا ادارهٔ برق هیچ کاری نمی‌کند؟}
+    \item \dariit{این مسئولین مردم را فراموش کرده‌اند}
+    \item \dariit{به خدا قسم، زورمندان دیگر بس است}
+    \item \dariit{چرا ادارهٔ برق هیچ کاری نمی‌کند؟}
 \end{itemize}
 
 \subsection{Disgust Templates}
@@ -216,9 +226,9 @@ For Disgust, I used moral revulsion and social withdrawal frames: interjection p
 
 Examples:
 \begin{itemize}
-    \item \textit{اف به این روزگار، این فساد اداری قابل تحمل نیست}
-    \item \textit{این رشوت‌خوری در این کشور شرم‌آور است}
-    \item \textit{از این دورویی بیزارم، حال آدم را بد می‌کند}
+    \item \dariit{اف به این روزگار، این فساد اداری قابل تحمل نیست}
+    \item \dariit{این رشوت‌خوری در این کشور شرم‌آور است}
+    \item \dariit{از این دورویی بیزارم، حال آدم را بد می‌کند}
 \end{itemize}
 
 \subsection{Surface Perturbations}

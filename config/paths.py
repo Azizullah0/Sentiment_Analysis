@@ -84,6 +84,7 @@ BASE_PATH = STORAGE_ROOT
 for path in [
     os.path.join(STORAGE_ROOT, "Models"),
     os.path.join(STORAGE_ROOT, "outputs"),
+    os.path.join(STORAGE_ROOT, "outputs/deployment"),
     os.path.join(DATA_ROOT, "Data/processed"),
 ]:
     os.makedirs(path, exist_ok=True)
@@ -130,6 +131,8 @@ PATHS = {
     ),
     "ablation_outputs": os.path.join(STORAGE_ROOT, "outputs/ablation"),
     "confidence_outputs": os.path.join(STORAGE_ROOT, "outputs/confidence"),
+    "deployment_outputs": os.path.join(STORAGE_ROOT, "outputs/deployment"),
+    "ablation_a4_model": os.path.join(STORAGE_ROOT, "outputs/ablation/A4"),
     "Combined_Labeled_Dataset_scored": os.path.join(
         DATA_ROOT, "Data/processed/Combined_Labeled_Dataset_scored.csv"
     ),

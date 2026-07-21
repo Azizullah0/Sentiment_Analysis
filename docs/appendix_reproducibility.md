@@ -75,3 +75,17 @@ C1 was trained and validated on the fixed unfiltered holdout. C2/C3 were not run
 - Ablation: `outputs/ablation/<run_id>/training_metadata.json`
 - Multi-seed A4: `outputs/ablation/A4/seed_<N>/`, summary `outputs/ablation/A4/multiseed_summary.json`
 - Confidence: `outputs/confidence/<run_id>/training_metadata.json`, optional `holdout_eval.json`
+- Deployment: `outputs/deployment/youtube_batch_<timestamp>/`, `outputs/deployment/review_queue.jsonl`
+
+## Deployment (YouTube comment labeling)
+
+Package lives under `deployment/` (does not modify training scripts). Low-confidence predictions become **Others** (default threshold 0.50).
+
+```bash
+pip install -r deployment/requirements.txt
+# set YOUTUBE_API_KEY in the environment
+python -m deployment.youtube_batch --video-id VIDEO_ID --max-comments 500 --min-confidence 0.50
+uvicorn deployment.api:app --host 0.0.0.0 --port 8000
+```
+
+Details: `deployment/README.md`.

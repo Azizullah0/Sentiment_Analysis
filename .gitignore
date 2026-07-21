@@ -13,3 +13,5 @@ scripts/.ipynb_checkpoints/
 
 config/__pycache__/
 scripts/__pycache__/
+deployment/__pycache__/
+deployment/.env
