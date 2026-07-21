@@ -84,7 +84,7 @@ BASE_PATH = STORAGE_ROOT
 for path in [
     os.path.join(STORAGE_ROOT, "Models"),
     os.path.join(STORAGE_ROOT, "outputs"),
-    os.path.join(DATA_ROOT, "datasets"),
+    os.path.join(STORAGE_ROOT, "outputs/deployment"),
     os.path.join(DATA_ROOT, "Data/processed"),
 ]:
     os.makedirs(path, exist_ok=True)
@@ -120,6 +120,9 @@ PATHS = {
     "Combined_Labeled_Dataset_with_allAug": os.path.join(
         DATA_ROOT, "Data/processed/Combined_Labeled_Dataset_with_allAug.csv"
     ),
+    "Combined_Labeled_Dataset_with_allAug_bt": os.path.join(
+        DATA_ROOT, "Data/processed/Combined_Labeled_Dataset_with_allAug_bt.csv"
+    ),
     "Combined_Labeled_Dataset_with_fearAug_surprise": os.path.join(
         DATA_ROOT, "Data/processed/Combined_Labeled_Dataset_with_fearAug_surprise.csv"
     ),
@@ -128,15 +131,16 @@ PATHS = {
     ),
     "ablation_outputs": os.path.join(STORAGE_ROOT, "outputs/ablation"),
     "confidence_outputs": os.path.join(STORAGE_ROOT, "outputs/confidence"),
+    "deployment_outputs": os.path.join(STORAGE_ROOT, "outputs/deployment"),
+    "ablation_a4_model": os.path.join(STORAGE_ROOT, "outputs/ablation/A4"),
     "Combined_Labeled_Dataset_scored": os.path.join(
         DATA_ROOT, "Data/processed/Combined_Labeled_Dataset_scored.csv"
     ),
     "eval_holdout_original": os.path.join(DATA_ROOT, "Data/processed/eval_holdout_original.csv"),
     "train_pool_original": os.path.join(DATA_ROOT, "Data/processed/train_pool_original.csv"),
-    "augmented_data": os.path.join(DATA_ROOT, "Data/processed/fear_augmented.csv"),
     "Labeled_4K": os.path.join(DATA_ROOT, "Data/processed/Labeled_4K.csv"),
+    "bt_spotcheck_dir": os.path.join(DATA_ROOT, "Data/processed"),
     "augmented_afghan_fear_9000": os.path.join(DATA_ROOT, "Data/processed/augmented_afghan_fear_9000.csv"),
-    "datasets": os.path.join(DATA_ROOT, "datasets"),
     "outputs": os.path.join(STORAGE_ROOT, "outputs"),
 }
 
@@ -148,17 +152,14 @@ MODEL_CONFIG = {
 }
 
 
-def confidence_filtered_path(threshold, output_dir=None):
-    """Return path for a confidence-filtered dataset CSV (legacy: full scored set)."""
-    directory = output_dir or os.path.join(DATA_ROOT, "Data/processed")
-    threshold_label = str(threshold).replace(".", "")
-    filename = f"Combined_Labeled_Dataset_conf{threshold_label}.csv"
-    return os.path.join(directory, filename)
-
-
 def train_filtered_confidence_path(threshold, output_dir=None):
     """Return path for filtered training-pool-only CSV (valid confidence experiments)."""
     directory = output_dir or os.path.join(DATA_ROOT, "Data/processed")
     threshold_label = str(threshold).replace(".", "")
     filename = f"train_filtered_conf{threshold_label}.csv"
     return os.path.join(directory, filename)
+
+
+def augmented_bt_path(emotion: str, n: int) -> str:
+    """Return path for a back-translation augmentation CSV."""
+    return os.path.join(DATA_ROOT, "Data/processed", f"augmented_bt_{emotion.lower()}_{n}.csv")

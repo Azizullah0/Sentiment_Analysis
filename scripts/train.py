@@ -34,6 +34,7 @@ from transformers import (
     EarlyStoppingCallback,
     Trainer,
     TrainingArguments,
+    set_seed,
 )
 
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
@@ -107,7 +108,7 @@ def parse_args():
     parser = argparse.ArgumentParser(description="Unified training script for sentiment experiments.")
     parser.add_argument(
         "--mode",
-        choices=["baseline_4k", "full_8label", "full_7label", "full_8label_aug", "full_8label_all_aug"],
+        choices=["baseline_4k", "full_8label", "full_7label", "full_8label_aug", "full_8label_all_aug", "full_8label_all_aug_bt"],
         required=True,
         help="Experiment preset to run.",
     )
@@ -128,7 +129,18 @@ def parse_args():
     parser.add_argument("--warmup-steps", type=int, help="Override warmup steps.")
     parser.add_argument("--save-total-limit", type=int, help="Override number of checkpoints kept.")
     parser.add_argument("--test-size", type=float, default=0.2, help="Train/test split ratio.")
-    parser.add_argument("--random-state", type=int, default=42, help="Random seed for train/test split.")
+    parser.add_argument(
+        "--random-state",
+        type=int,
+        default=42,
+        help="Random seed for train/test split only (sklearn stratified split).",
+    )
+    parser.add_argument(
+        "--seed",
+        type=int,
+        default=42,
+        help="Training seed for model init, batch order, and Trainer RNG (multi-seed stability).",
+    )
     parser.add_argument("--logging-steps", type=int, help="Override logging frequency.")
     parser.add_argument("--early-stopping-patience", type=int, help="Override early stopping patience.")
     parser.add_argument(
@@ -367,6 +379,48 @@ def get_preset(mode):
                 "Fear + Surprise + Anger + Disgust (Combined_Labeled_Dataset_with_allAug.csv).",
             ],
         },
+        "full_8label_all_aug_bt": {
+            "training_type": "full_8_label_all_augmented_bt",
+            "dataset_path": PATHS["Combined_Labeled_Dataset_with_allAug_bt"],
+            "base_model": PATHS["parsbert_emotion"],
+            "output_dir": os.path.join(PATHS["outputs"], f"full_8label_all_aug_bt_{timestamp_now()}"),
+            "final_model_dir": PATHS["incremental_finetuned_model"],
+            "text_column": "clean",
+            "label_column": "label_id",
+            "num_labels": 8,
+            "label_names": LABEL_NAMES_8,
+            "problem_type": None,
+            "rename_text_to_clean": False,
+            "derive_labels_from_label_text": False,
+            "drop_fear": False,
+            "compute_dynamic_class_weights": True,
+            "fixed_class_weights": None,
+            "learning_rate": 1e-5,
+            "batch_size": MODEL_CONFIG.get("batch_size", 16),
+            "num_train_epochs": 4,
+            "weight_decay": 0.01,
+            "warmup_steps": 100,
+            "logging_steps": 50,
+            "logging_strategy": "steps",
+            "logging_dir": None,
+            "metric_for_best_model": "f1_macro",
+            "greater_is_better": True,
+            "save_total_limit": 2,
+            "fp16": True,
+            "push_to_hub": False,
+            "dataloader_drop_last": True,
+            "dataloader_num_workers": None,
+            "logging_first_step": False,
+            "early_stopping_patience": 3,
+            "timestamp_output": True,
+            "output_prefix": "full_8label_all_aug_bt",
+            "tokenizer_use_fast": None,
+            "padding": "max_length",
+            "description_lines": [
+                "Full-dataset 8-label training on template + back-translation augmentations.",
+                "A4 dataset plus BT paraphrases from 4K gold seed (Combined_Labeled_Dataset_with_allAug_bt.csv).",
+            ],
+        },
     }
     return presets[mode]
 
@@ -419,6 +473,7 @@ def resolve_runtime_config(args):
         config["padding"] = False
     if args.eval_dataset_path:
         config["eval_dataset_path"] = os.path.abspath(os.path.expanduser(args.eval_dataset_path))
+    config["seed"] = args.seed
 
     return config
 
@@ -631,6 +686,8 @@ def build_training_args(config):
         training_kwargs["warmup_steps"] = config["warmup_steps"]
     if config["dataloader_num_workers"] is not None:
         training_kwargs["dataloader_num_workers"] = config["dataloader_num_workers"]
+    if config.get("seed") is not None:
+        training_kwargs["seed"] = config["seed"]
 
     return TrainingArguments(**standardize_strategy_key(training_kwargs))
 
@@ -666,6 +723,8 @@ def main():
     if config.get("eval_dataset_path"):
         print(f"Eval dataset path: {config['eval_dataset_path']} (fixed holdout)")
     print(f"Base model: {config['base_model']}")
+    print(f"Split random_state: {args.random_state} | Training seed: {args.seed}")
+    set_seed(args.seed)
 
     ensure_output_paths(config)
     train_df = load_dataframe(config)
@@ -725,6 +784,8 @@ def main():
         "training_type": config["training_type"],
         "mode": args.mode,
         "base_model": config["base_model"],
+        "split_random_state": args.random_state,
+        "training_seed": args.seed,
         "training_date": datetime.datetime.now().isoformat(),
         "dataset_path": config["dataset_path"],
         "eval_dataset_path": config.get("eval_dataset_path"),

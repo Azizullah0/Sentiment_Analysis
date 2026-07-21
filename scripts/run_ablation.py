@@ -75,6 +75,12 @@ ABLATION_RUNS = {
         "anchor": True,
         "anchor_metrics": {"accuracy": 0.8612, "f1_macro": 0.857},
     },
+    "A5": {
+        "description": "A4 + back-translation from 4K gold seed",
+        "mode": "full_8label_all_aug_bt",
+        "dataset_path": PATHS["Combined_Labeled_Dataset_with_allAug_bt"],
+        "anchor": False,
+    },
 }
 
 
@@ -107,6 +113,21 @@ def parse_args():
         action="store_true",
         help="List all ablation runs and their status.",
     )
+    parser.add_argument(
+        "--seed",
+        type=int,
+        help="Training seed passed to train.py (model init / batch order).",
+    )
+    parser.add_argument(
+        "--split-seed",
+        type=int,
+        help="Split seed passed to train.py as --random-state (default: train.py default 42).",
+    )
+    parser.add_argument(
+        "--output-dir",
+        type=str,
+        help="Override training output directory (and final model dir).",
+    )
     return parser.parse_args()
 
 
@@ -127,8 +148,8 @@ def build_merge_command(build_config):
     ]
 
 
-def build_train_command(run_id, run_config):
-    output_dir = ablation_output_dir(run_id)
+def build_train_command(run_id, run_config, seed=None, split_seed=None, output_dir=None):
+    output_dir = output_dir or ablation_output_dir(run_id)
     command = [
         sys.executable,
         TRAIN_SCRIPT,
@@ -142,6 +163,10 @@ def build_train_command(run_id, run_config):
         output_dir,
         *ABLATION_HYPERPARAMS,
     ]
+    if seed is not None:
+        command.extend(["--seed", str(seed)])
+    if split_seed is not None:
+        command.extend(["--random-state", str(split_seed)])
     return command
 
 
@@ -209,7 +234,7 @@ def list_runs():
     print("  python scripts/run_ablation.py --dry-run")
 
 
-def execute_run(run_id, build_datasets, force, dry_run=False):
+def execute_run(run_id, build_datasets, force, dry_run=False, seed=None, split_seed=None, output_dir=None):
     run_config = ABLATION_RUNS[run_id]
     print_run_summary(run_id, run_config)
 
@@ -228,14 +253,16 @@ def execute_run(run_id, build_datasets, force, dry_run=False):
             hint = f" Run with --build-datasets to create it, or merge manually."
         raise FileNotFoundError(f"Dataset not found: {run_config['dataset_path']}.{hint}")
 
-    train_command = build_train_command(run_id, run_config)
+    train_command = build_train_command(
+        run_id, run_config, seed=seed, split_seed=split_seed, output_dir=output_dir
+    )
     print_command("Train command:", train_command)
 
     if dry_run:
         print("\nDry run only — command not executed.")
         return
 
-    os.makedirs(ablation_output_dir(run_id), exist_ok=True)
+    os.makedirs(output_dir or ablation_output_dir(run_id), exist_ok=True)
     run_command(train_command)
     show_metadata_hint(run_id)
     print("\nReview training_metadata.json before running the next experiment.")
@@ -254,6 +281,9 @@ def main():
             build_datasets=args.build_datasets,
             force=args.force,
             dry_run=args.dry_run,
+            seed=args.seed,
+            split_seed=args.split_seed,
+            output_dir=args.output_dir,
         )
         return
 
