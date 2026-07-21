@@ -22,6 +22,7 @@ The codebase has been simplified to use a single training script, `scripts/train
 - `augmentations/emotion_augmenter.py`: Surprise, Anger, Disgust template augmentation
 - `augmentations/back_translation_augmenter.py`: NLLB round-trip augmentation from 4K gold seed
 - `docs/appendix_reproducibility.md`: full command reference for thesis experiments
+- `deployment/`: YouTube comment labeling + FastAPI serve stack (separate from training; see [deployment/README.md](deployment/README.md))
 
 ## Requirements
 
@@ -31,6 +32,12 @@ Install dependencies with:
 
 ```bash
 pip install -r requirements.txt
+```
+
+For YouTube labeling / API serving, also install:
+
+```bash
+pip install -r deployment/requirements.txt
 ```
 
 ## Data and Directory Configuration
