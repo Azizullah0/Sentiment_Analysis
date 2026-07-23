@@ -22,7 +22,7 @@ The codebase has been simplified to use a single training script, `scripts/train
 - `augmentations/emotion_augmenter.py`: Surprise, Anger, Disgust template augmentation
 - `augmentations/back_translation_augmenter.py`: NLLB round-trip augmentation from 4K gold seed
 - `docs/appendix_reproducibility.md`: full command reference for thesis experiments
-- `deployment/`: YouTube comment labeling + FastAPI serve stack (separate from training; see [deployment/README.md](deployment/README.md))
+- `deployment/`: YouTube comment labeling + FastAPI + bilingual EN/FA dashboard (see [deployment/README.md](deployment/README.md))
 
 ## Requirements
 
@@ -38,6 +38,14 @@ For YouTube labeling / API serving, also install:
 
 ```bash
 pip install -r deployment/requirements.txt
+```
+
+Dashboard (after `npm install && npm run build` in `deployment/dashboard`):
+
+```bash
+export YOUTUBE_API_KEY=your-key
+uvicorn deployment.api:app --host 0.0.0.0 --port 8000
+# open http://localhost:8000  — EN/FA toggle in the header
 ```
 
 ## Data and Directory Configuration

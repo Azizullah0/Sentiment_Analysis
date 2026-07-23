@@ -77,7 +77,7 @@ C1 was trained and validated on the fixed unfiltered holdout. C2/C3 were not run
 - Confidence: `outputs/confidence/<run_id>/training_metadata.json`, optional `holdout_eval.json`
 - Deployment: `outputs/deployment/youtube_batch_<timestamp>/`, `outputs/deployment/review_queue.jsonl`
 
-## Deployment (YouTube comment labeling)
+## Deployment (YouTube comment labeling + dashboard)
 
 Package lives under `deployment/` (does not modify training scripts). Low-confidence predictions become **Others** (default threshold 0.50).
 
@@ -85,7 +85,11 @@ Package lives under `deployment/` (does not modify training scripts). Low-confid
 pip install -r deployment/requirements.txt
 # set YOUTUBE_API_KEY in the environment
 python -m deployment.youtube_batch --video-id VIDEO_ID --max-comments 500 --min-confidence 0.50
+
+# Bilingual EN/FA dashboard
+cd deployment/dashboard && npm install && npm run build && cd ../..
 uvicorn deployment.api:app --host 0.0.0.0 --port 8000
+# open http://HOST:8000
 ```
 
 Details: `deployment/README.md`.
