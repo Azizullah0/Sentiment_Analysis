@@ -18,11 +18,12 @@ from config.paths import PATHS
 from deployment.predictor import (
     DEFAULT_MIN_CONFIDENCE,
     EmotionPredictor,
+    EXCLUDED_LABEL,
     OTHERS_LABEL,
     append_review_queue,
 )
 
-EMOTION_LABELS = [
+USABLE_LABELS = [
     "Hope",
     "Happy",
     "Neutral",
@@ -33,6 +34,8 @@ EMOTION_LABELS = [
     "Fear",
     OTHERS_LABEL,
 ]
+
+EMOTION_LABELS = USABLE_LABELS + [EXCLUDED_LABEL]
 
 LogFn = Callable[[str], None]
 
@@ -195,26 +198,120 @@ def build_summary(
     min_confidence: float,
     video_ids: Sequence[str],
 ) -> Dict[str, Any]:
-    counts = Counter(r["label"] for r in rows)
-    non_others = [r for r in rows if r["label"] != OTHERS_LABEL]
-    fear_anger = [r for r in non_others if r["label"] in ("Fear", "Anger")]
-    confidences = [float(r["confidence"]) for r in rows if r.get("raw_emotion")]
+    counts_all = Counter(r["label"] for r in rows)
+    usable = [r for r in rows if r["label"] != EXCLUDED_LABEL]
+    counts_usable = Counter(r["label"] for r in usable)
+    n_fetched = len(rows)
+    n_excluded = int(counts_all.get(EXCLUDED_LABEL, 0))
+    n_usable = len(usable)
+    n_others = int(counts_usable.get(OTHERS_LABEL, 0))
+    non_others_usable = [r for r in usable if r["label"] != OTHERS_LABEL]
+    fear_anger = [r for r in non_others_usable if r["label"] in ("Fear", "Anger")]
+    confidences = [
+        float(r["confidence"])
+        for r in usable
+        if r.get("raw_emotion")
+    ]
+    exclusion_reasons = Counter(
+        r.get("abstain_reason") or "unknown"
+        for r in rows
+        if r["label"] == EXCLUDED_LABEL
+    )
     per_video: Dict[str, int] = Counter(r["video_id"] for r in rows)
+    label_counts_usable = {
+        lab: int(counts_usable.get(lab, 0)) for lab in USABLE_LABELS
+    }
+    label_counts_all = {
+        lab: int(counts_all.get(lab, 0)) for lab in EMOTION_LABELS
+    }
     return {
-        "n_comments": len(rows),
+        "n_comments": n_fetched,
+        "n_fetched": n_fetched,
+        "n_excluded": n_excluded,
+        "n_usable": n_usable,
+        "n_others": n_others,
+        "exclusion_rate": (n_excluded / n_fetched) if n_fetched else 0.0,
+        "others_rate_among_usable": (n_others / n_usable) if n_usable else 0.0,
+        # Legacy field: among all fetched (includes Excluded as non-Others)
+        "others_rate": (n_others / n_fetched) if n_fetched else 0.0,
         "video_ids": list(video_ids),
         "min_confidence": min_confidence,
-        "label_counts": {lab: int(counts.get(lab, 0)) for lab in EMOTION_LABELS},
-        "others_rate": (counts.get(OTHERS_LABEL, 0) / len(rows)) if rows else 0.0,
+        "label_counts": label_counts_usable,
+        "label_counts_usable": label_counts_usable,
+        "label_counts_all": label_counts_all,
+        "exclusion_reasons": dict(exclusion_reasons),
         "mean_confidence_raw": (
             sum(confidences) / len(confidences) if confidences else None
         ),
         "fear_anger_count_non_others": len(fear_anger),
         "fear_anger_rate_non_others": (
-            len(fear_anger) / len(non_others) if non_others else 0.0
+            len(fear_anger) / len(non_others_usable) if non_others_usable else 0.0
         ),
         "comments_per_video": dict(per_video),
     }
+
+
+def remap_legacy_others_to_excluded(rows: Sequence[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """Map old Others+unusable_text rows to Excluded without re-running the model."""
+    out: List[Dict[str, Any]] = []
+    for r in rows:
+        row = dict(r)
+        label = row.get("label")
+        reason = row.get("abstain_reason")
+        if label == OTHERS_LABEL and reason in (
+            "unusable_text",
+            "empty",
+            "emoji_only",
+            "too_short",
+            "non_persian",
+        ):
+            row["label"] = EXCLUDED_LABEL
+            row["raw_emotion"] = ""
+            row["confidence"] = 0.0
+            row["abstain"] = True
+            if reason == "unusable_text":
+                row["abstain_reason"] = "non_persian"
+        out.append(row)
+    return out
+
+
+def reaggregate_run_dir(path: str, rewrite_csv: bool = True) -> Dict[str, Any]:
+    """Refresh summary.json (and optionally CSV) for an existing batch folder."""
+    csv_path = os.path.join(path, "labeled_comments.csv")
+    sqlite_path = os.path.join(path, "labeled_comments.sqlite")
+    if os.path.isfile(sqlite_path):
+        conn = sqlite3.connect(sqlite_path)
+        try:
+            df = pd.read_sql_query("SELECT * FROM labeled_comments", conn)
+        finally:
+            conn.close()
+    elif os.path.isfile(csv_path):
+        df = pd.read_csv(csv_path)
+    else:
+        raise FileNotFoundError(f"No labeled comments in {path}")
+
+    rows = df.where(pd.notnull(df), None).to_dict(orient="records")
+    rows = remap_legacy_others_to_excluded(rows)
+
+    summary_path = os.path.join(path, "summary.json")
+    old = {}
+    if os.path.isfile(summary_path):
+        with open(summary_path, encoding="utf-8") as f:
+            old = json.load(f)
+    video_ids = old.get("video_ids") or sorted(
+        {r["video_id"] for r in rows if r.get("video_id")}
+    )
+    min_confidence = float(old.get("min_confidence") or DEFAULT_MIN_CONFIDENCE)
+    summary = build_summary(rows, min_confidence, video_ids)
+    with open(summary_path, "w", encoding="utf-8") as f:
+        json.dump(summary, f, ensure_ascii=False, indent=2)
+
+    if rewrite_csv:
+        out_df = pd.DataFrame(rows)
+        out_df.to_csv(csv_path, index=False, encoding="utf-8-sig")
+        write_sqlite(sqlite_path, rows)
+
+    return summary
 
 
 def dedupe_video_ids(video_ids: Sequence[str]) -> List[str]:
@@ -305,7 +402,10 @@ def run_batch(
 
     _log(f"Wrote outputs to: {out_dir}")
     _log(f"  labeled_comments.csv  ({len(df)} rows)")
-    _log(f"  summary.json          Others rate={summary['others_rate']:.3f}")
+    _log(
+        f"  summary.json          excluded={summary['exclusion_rate']:.3f} "
+        f"others_among_usable={summary['others_rate_among_usable']:.3f}"
+    )
     _log(f"  review_candidates.csv ({len(review)} Fear/Anger)")
     _log(f"  review_queue.jsonl    (+{n_queued} lines)")
 
@@ -347,9 +447,15 @@ def list_runs() -> List[Dict[str, Any]]:
                     mtime, tz=timezone.utc
                 ).isoformat(),
                 "n_comments": summary.get("n_comments", 0),
+                "n_usable": summary.get("n_usable"),
+                "n_excluded": summary.get("n_excluded"),
+                "exclusion_rate": summary.get("exclusion_rate"),
                 "others_rate": summary.get("others_rate"),
+                "others_rate_among_usable": summary.get("others_rate_among_usable"),
                 "fear_anger_count": summary.get("fear_anger_count_non_others", 0),
                 "label_counts": summary.get("label_counts", {}),
+                "label_counts_usable": summary.get("label_counts_usable"),
+                "label_counts_all": summary.get("label_counts_all"),
                 "video_ids": summary.get("video_ids", []),
                 "min_confidence": summary.get("min_confidence"),
             }
@@ -404,11 +510,14 @@ def query_comments(
     label: Optional[str] = None,
     video_id: Optional[str] = None,
     abstain: Optional[bool] = None,
+    usable_only: bool = False,
     q: Optional[str] = None,
     offset: int = 0,
     limit: int = 50,
 ) -> Dict[str, Any]:
     df = _load_comments_df(run_id)
+    if usable_only:
+        df = df[df["label"] != EXCLUDED_LABEL]
     if label:
         df = df[df["label"] == label]
     if video_id:

@@ -22,9 +22,10 @@ const COLORS = {
   Anger: "#d07a4c",
   Fear: "#c97b84",
   Others: "#5a564c",
+  Excluded: "#3d4540",
 };
 
-const LABELS = [
+const USABLE_LABELS = [
   "Hope",
   "Happy",
   "Neutral",
@@ -36,6 +37,20 @@ const LABELS = [
   "Others",
 ];
 
+const ALL_LABELS = [...USABLE_LABELS, "Excluded"];
+
+const VIEW_KEY = "deepdari_run_view_mode";
+
+function loadViewMode() {
+  try {
+    const v = sessionStorage.getItem(VIEW_KEY);
+    if (v === "all" || v === "usable") return v;
+  } catch {
+    /* ignore */
+  }
+  return "usable";
+}
+
 export default function RunDetailPage({ t }) {
   const { runId } = useParams();
   const [detail, setDetail] = useState(null);
@@ -46,13 +61,36 @@ export default function RunDetailPage({ t }) {
   const [q, setQ] = useState("");
   const [err, setErr] = useState(null);
   const [saveMsg, setSaveMsg] = useState("");
+  const [viewMode, setViewMode] = useState(loadViewMode);
+
+  const setView = (mode) => {
+    setViewMode(mode);
+    try {
+      sessionStorage.setItem(VIEW_KEY, mode);
+    } catch {
+      /* ignore */
+    }
+  };
+
+  const chartLabels = viewMode === "all" ? ALL_LABELS : USABLE_LABELS;
 
   const loadComments = useCallback(() => {
+    if (viewMode === "usable" && label === "Excluded") {
+      setComments({ total: 0, offset: 0, limit: 100, items: [] });
+      return;
+    }
     api
-      .comments(runId, { label, video_id: videoId, q, limit: 100, offset: 0 })
+      .comments(runId, {
+        label,
+        video_id: videoId,
+        q,
+        limit: 100,
+        offset: 0,
+        usable_only: viewMode === "usable",
+      })
       .then(setComments)
       .catch((e) => setErr(e.message));
-  }, [runId, label, videoId, q]);
+  }, [runId, label, videoId, q, viewMode]);
 
   useEffect(() => {
     api
@@ -70,13 +108,17 @@ export default function RunDetailPage({ t }) {
   }, [loadComments]);
 
   const chartData = useMemo(() => {
-    const counts = detail?.summary?.label_counts || {};
-    return LABELS.map((name) => ({
+    const s = detail?.summary || {};
+    const counts =
+      viewMode === "all"
+        ? s.label_counts_all || s.label_counts || {}
+        : s.label_counts_usable || s.label_counts || {};
+    return chartLabels.map((name) => ({
       name,
       label: t[name] || name,
       count: counts[name] || 0,
     }));
-  }, [detail, t]);
+  }, [detail, t, viewMode, chartLabels]);
 
   const videoChart = useMemo(() => {
     const per = detail?.summary?.comments_per_video || {};
@@ -104,6 +146,12 @@ export default function RunDetailPage({ t }) {
   if (!detail) return <div className="empty">{t.loading}</div>;
 
   const s = detail.summary || {};
+  const othersPct =
+    viewMode === "usable"
+      ? s.others_rate_among_usable ?? s.others_rate
+      : s.others_rate;
+  const commentCount =
+    viewMode === "usable" ? s.n_usable ?? s.n_comments : s.n_fetched ?? s.n_comments;
 
   return (
     <section>
@@ -113,18 +161,53 @@ export default function RunDetailPage({ t }) {
       <h2 style={{ marginBottom: "0.25rem" }}>{runId}</h2>
       <p className="muted">{t.overview}</p>
 
+      <div className="card view-toggle-card">
+        <div className="toolbar" style={{ marginBottom: "0.35rem" }}>
+          <span className="muted" style={{ marginInlineEnd: "0.5rem" }}>
+            {t.view_mode}
+          </span>
+          <div className="segmented" role="group" aria-label={t.view_mode}>
+            <button
+              type="button"
+              className={viewMode === "usable" ? "seg active" : "seg"}
+              onClick={() => setView("usable")}
+            >
+              {t.view_usable}
+            </button>
+            <button
+              type="button"
+              className={viewMode === "all" ? "seg active" : "seg"}
+              onClick={() => setView("all")}
+            >
+              {t.view_all}
+            </button>
+          </div>
+        </div>
+        <p className="muted" style={{ margin: 0, fontSize: "0.9rem" }}>
+          {viewMode === "usable" ? t.view_hint_usable : t.view_hint_all}
+        </p>
+      </div>
+
       <div className="grid kpis">
         <div className="card kpi">
-          <div className="value">{s.n_comments ?? "—"}</div>
-          <div className="label">{t.comments}</div>
+          <div className="value">{commentCount ?? "—"}</div>
+          <div className="label">
+            {viewMode === "usable" ? t.usable_count : t.comments}
+          </div>
         </div>
         <div className="card kpi">
           <div className="value">
-            {s.others_rate != null
-              ? `${(s.others_rate * 100).toFixed(1)}%`
-              : "—"}
+            {othersPct != null ? `${(othersPct * 100).toFixed(1)}%` : "—"}
           </div>
           <div className="label">{t.others_rate}</div>
+        </div>
+        <div className="card kpi">
+          <div className="value">
+            {s.exclusion_rate != null
+              ? `${(s.exclusion_rate * 100).toFixed(1)}%`
+              : "—"}
+          </div>
+          <div className="label">{t.exclusion_rate}</div>
         </div>
         <div className="card kpi">
           <div className="value">{s.fear_anger_count_non_others ?? 0}</div>
@@ -204,7 +287,7 @@ export default function RunDetailPage({ t }) {
         <div className="toolbar">
           <select value={label} onChange={(e) => setLabel(e.target.value)}>
             <option value="">{t.filter_all}</option>
-            {LABELS.map((l) => (
+            {chartLabels.map((l) => (
               <option key={l} value={l}>
                 {t[l] || l}
               </option>

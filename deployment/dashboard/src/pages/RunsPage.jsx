@@ -31,9 +31,16 @@ export default function RunsPage({ t }) {
             <div>
               <strong>{r.run_id}</strong>
               <div className="meta">
-                {r.n_comments} {t.comments}
+                {r.n_usable != null ? r.n_usable : r.n_comments} {t.usable_count}
                 {" · "}
-                {t.others_rate} {pct(r.others_rate)}
+                {t.others_rate}{" "}
+                {pct(
+                  r.others_rate_among_usable != null
+                    ? r.others_rate_among_usable
+                    : r.others_rate
+                )}
+                {" · "}
+                {t.exclusion_rate} {pct(r.exclusion_rate)}
                 {" · "}
                 {t.fear_anger} {r.fear_anger_count ?? 0}
                 {" · "}

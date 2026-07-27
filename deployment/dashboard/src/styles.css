@@ -311,6 +311,37 @@ td.rtl-text {
 .badge.Others {
   color: var(--muted);
 }
+.badge.Excluded {
+  color: #8a958c;
+  border-style: dashed;
+}
+
+.view-toggle-card {
+  margin: 0.75rem 0 1rem;
+  padding: 0.85rem 1rem;
+}
+
+.segmented {
+  display: inline-flex;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.seg {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  padding: 0.4rem 0.85rem;
+  font: inherit;
+  cursor: pointer;
+}
+
+.seg.active {
+  background: rgba(212, 161, 90, 0.18);
+  color: var(--text);
+}
 
 .status-ok {
   color: var(--ok);

@@ -28,9 +28,31 @@ Model resolution order (first existing checkpoint wins):
 
 Override with `--model-path` or `DEPLOYMENT_MODEL_PATH`.
 
-## Others abstention
+## Filter-then-classify (Excluded vs Others)
 
-If top-class confidence is **below** `--min-confidence` (default **0.50**), the final **`label` is `Others`**. Unusable / non-Persian short text is also `Others`.
+Pipeline:
+
+1. **Clean** — strip URLs, `@mentions`, emojis; unify ي/ی and ك/ک  
+2. **Gate** — drop comments that are empty, emoji-only, too short (&lt; 4 tokens), or mostly non-Persian/Dari (Persian-script ratio &lt; 0.5) → **`Excluded`** (no model call)  
+3. **Predict** — ParsBERT on remaining text  
+4. **Abstain** — if confidence &lt; `--min-confidence` (default **0.50**) → **`Others`**
+
+So **Others = model unsure on usable Dari/Persian**, not emoji/Latin noise.
+
+`summary.json` reports both views:
+
+- `exclusion_rate`, `n_excluded`  
+- `others_rate_among_usable`, `label_counts_usable`  
+- `label_counts_all` (includes Excluded)
+
+Dashboard **Run detail** has a defense toggle: **Usable only** (default) vs **All comments**.
+
+Refresh old runs (remap legacy `Others`+`unusable_text` → `Excluded`):
+
+```bash
+python -m deployment.reaggregate
+python -m deployment.reaggregate --run-id youtube_batch_20260727T035253Z
+```
 
 ## CLI batch labeling
 

@@ -1,4 +1,4 @@
-"""Deployment EmotionPredictor with confidence → Others abstention."""
+"""Deployment EmotionPredictor: Excluded (pre-filter) vs Others (abstain)."""
 
 from __future__ import annotations
 
@@ -12,7 +12,7 @@ from transformers import AutoModelForSequenceClassification, AutoTokenizer
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from config.paths import PATHS  # noqa: E402
 
-from deployment.preprocess import clean_text, is_usable  # noqa: E402
+from deployment.preprocess import classify_text  # noqa: E402
 
 LABEL_MAP = {
     0: "Hope",
@@ -28,10 +28,10 @@ LABEL_MAP = {
 DEFAULT_MIN_CONFIDENCE = 0.50
 DEFAULT_MAX_LENGTH = 256
 OTHERS_LABEL = "Others"
+EXCLUDED_LABEL = "Excluded"
 
 
 def resolve_model_path(explicit: Optional[str] = None) -> str:
-    """Prefer A4 → incremental → seed model directories that exist on disk."""
     if explicit:
         path = os.path.abspath(os.path.expanduser(explicit))
         if not os.path.isdir(path):
@@ -46,14 +46,29 @@ def resolve_model_path(explicit: Optional[str] = None) -> str:
     ]
     for candidate in candidates:
         if candidate and os.path.isdir(candidate):
-            # Prefer dirs that look like HF checkpoints
             if os.path.isfile(os.path.join(candidate, "config.json")):
                 return candidate
-    # Return first candidate even if missing (clearer error on load)
     for candidate in candidates:
         if candidate:
             return candidate
     raise FileNotFoundError("No model path configured in PATHS.")
+
+
+def excluded_result(
+    text: Optional[str],
+    cleaned: str,
+    reason: str,
+) -> Dict[str, Any]:
+    return {
+        "text": text,
+        "text_clean": cleaned,
+        "label": EXCLUDED_LABEL,
+        "raw_emotion": "",
+        "confidence": 0.0,
+        "abstain": True,
+        "abstain_reason": reason,
+        "all_probabilities": {},
+    }
 
 
 def apply_confidence_gate(
@@ -62,12 +77,9 @@ def apply_confidence_gate(
     min_confidence: float = DEFAULT_MIN_CONFIDENCE,
     all_probabilities: Optional[Dict[str, float]] = None,
     text: Optional[str] = None,
-    abstain_reason: Optional[str] = None,
 ) -> Dict[str, Any]:
-    """Map low-confidence predictions to Others; keep raw_emotion for analysis."""
+    """Map low-confidence predictions to Others (usable text only)."""
     abstain = confidence < float(min_confidence)
-    if abstain_reason:
-        abstain = True
     label = OTHERS_LABEL if abstain else raw_emotion
     return {
         "text": text,
@@ -75,7 +87,7 @@ def apply_confidence_gate(
         "raw_emotion": raw_emotion,
         "confidence": float(confidence),
         "abstain": abstain,
-        "abstain_reason": abstain_reason if abstain else None,
+        "abstain_reason": "low_confidence" if abstain else None,
         "all_probabilities": all_probabilities or {},
     }
 
@@ -149,8 +161,9 @@ class EmotionPredictor:
         skip_unusable: bool = False,
     ) -> Union[Dict[str, Any], List[Dict[str, Any]]]:
         """
-        Predict emotion(s). Final `label` is Others when confidence < threshold
-        or text is unusable after cleaning.
+        Predict emotion(s).
+        - Excluded: non-Persian / emoji-only / too short (no model call)
+        - Others: usable text with confidence below threshold
         """
         single = isinstance(text, str)
         texts = [text] if single else list(text)
@@ -158,17 +171,25 @@ class EmotionPredictor:
             self.min_confidence if min_confidence is None else float(min_confidence)
         )
 
-        cleaned_list: List[str] = []
         meta: List[Dict[str, Any]] = []
         for t in texts:
-            cleaned = clean_text(t) if apply_preprocess else (t or "")
-            usable = is_usable(cleaned) if apply_preprocess else bool(cleaned.strip())
-            meta.append({"original": t, "cleaned": cleaned, "usable": usable})
-            cleaned_list.append(cleaned if usable else "")
+            if apply_preprocess:
+                cleaned, usable, reason = classify_text(t)
+            else:
+                cleaned = (t or "").strip()
+                usable = bool(cleaned)
+                reason = None if usable else "empty"
+            meta.append(
+                {
+                    "original": t,
+                    "cleaned": cleaned,
+                    "usable": usable,
+                    "reason": reason,
+                }
+            )
 
-        # Batch only usable texts; map back
         usable_indices = [i for i, m in enumerate(meta) if m["usable"]]
-        usable_texts = [cleaned_list[i] for i in usable_indices]
+        usable_texts = [meta[i]["cleaned"] for i in usable_indices]
         raw_by_index: Dict[int, Dict[str, Any]] = {}
         if usable_texts:
             raw_batch = self._predict_raw_batch(usable_texts)
@@ -181,16 +202,10 @@ class EmotionPredictor:
                 if skip_unusable:
                     continue
                 outputs.append(
-                    apply_confidence_gate(
-                        raw_emotion="",
-                        confidence=0.0,
-                        min_confidence=threshold,
-                        all_probabilities={},
-                        text=m["original"],
-                        abstain_reason="unusable_text",
+                    excluded_result(
+                        m["original"], m["cleaned"], m["reason"] or "unusable_text"
                     )
                 )
-                outputs[-1]["text_clean"] = m["cleaned"]
                 continue
 
             raw = raw_by_index[i]
@@ -212,7 +227,6 @@ def append_review_queue(
     queue_path: str,
     emotions=("Fear", "Anger"),
 ) -> bool:
-    """Append Fear/Anger (final label) rows to a JSONL review queue."""
     import json
 
     label = record.get("label")

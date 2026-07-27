@@ -2,7 +2,7 @@
 Optional live-chat monitor (run only after youtube_batch works).
 
 Polls liveChatMessages for an active broadcast, labels comments with the same
-Others abstention rule, and appends Fear/Anger to the review queue.
+Excluded vs Others rules, and appends Fear/Anger to the review queue.
 
 Usage:
   set YOUTUBE_API_KEY=...

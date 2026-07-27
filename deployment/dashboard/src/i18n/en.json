@@ -9,7 +9,14 @@
   "runs_title": "Batch runs",
   "runs_empty": "No batch runs yet. Start a new job or run youtube_batch on the server.",
   "comments": "Comments",
-  "others_rate": "Others rate",
+  "others_rate": "Others (among usable)",
+  "exclusion_rate": "Excluded rate",
+  "usable_count": "Usable comments",
+  "view_mode": "View",
+  "view_usable": "Usable only",
+  "view_all": "All comments",
+  "view_hint_usable": "Charts and KPIs on Dari/Persian comments after filter. Others = model abstain only.",
+  "view_hint_all": "Includes Excluded (emoji / non-Persian) so you can show raw stream noise.",
   "fear_anger": "Fear + Anger",
   "videos": "Videos",
   "open_run": "Open",
@@ -53,5 +60,6 @@
   "Sad": "Sad",
   "Anger": "Anger",
   "Fear": "Fear",
-  "Others": "Others"
+  "Others": "Others",
+  "Excluded": "Excluded"
 }
