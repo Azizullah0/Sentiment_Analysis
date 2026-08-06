@@ -43,7 +43,7 @@ Concrete gaps against Chapters 6–7 and submission polish. Status: **done** / *
 
 | # | Item | Status | Action |
 |---|------|--------|--------|
-| F1 | Supervisor name/title | **TODO (you)** | `titlepage.tex` |
+| F1 | Supervisor name/title | **TODO (you)** | Local thesis `titlepage.tex` (not on GitHub) |
 | F2 | Programme code / name vs Studienblatt | **TODO (you)** | Confirm `066 921` |
 | F3 | Acknowledgements | **TODO (you)** | Personal text |
 | F4 | Abstract / Kurzfassung length | **partial** | Re-read after number freeze |

@@ -8,11 +8,12 @@ Eight-class emotion classification for Dari/Persian social media (`Hope`, `Happy
 | Macro-F1 | **0.857** |
 | Fear F1 | **0.950** |
 
-**Thesis:** [`Master_Thesis_Massomy/`](Master_Thesis_Massomy/) (UniVie CS format, XeLaTeX)  
 **Conference paper (prior work, under review):** [`docs/paper.tex`](docs/paper.tex)  
 **Reproducibility:** [`docs/appendix_reproducibility.md`](docs/appendix_reproducibility.md)  
 **Submission checklist:** [`docs/thesis_readiness_checklist.md`](docs/thesis_readiness_checklist.md)  
-**Cite:** see [`CITATION.cff`](CITATION.cff)
+**Cite:** see [`CITATION.cff`](CITATION.cff)  
+
+The full Master’s thesis PDF/LaTeX project is **not** in this repository (kept private / Overleaf).
 
 Training is driven by `scripts/train.py` and ablation runners; live labeling lives under [`deployment/`](deployment/README.md) (FastAPI + bilingual EN/FA dashboard).
 

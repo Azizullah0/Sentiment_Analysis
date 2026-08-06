@@ -20,5 +20,6 @@ deployment/.env
 deployment/dashboard/node_modules/
 deployment/dashboard/dist/
 
-# Foreign thesis template (do not commit)
+# Thesis write-ups stay local / Overleaf only — never publish to GitHub
+Master_Thesis_Massomy/
 Master_Thesis_Cvetanovic/

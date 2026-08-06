@@ -9,7 +9,7 @@ This folder holds the **conference manuscript** that is prior work for the Maste
 
 **Status:** Submitted for peer review (authors: Massomy, Winiwarter, Dolezal).
 
-**Thesis link:** Cited in [`Master_Thesis_Massomy`](../Master_Thesis_Massomy) as `\cite{massomy2026deepdari}`. The thesis extends this paper with A0–A5 ablation, confidence filtering (C1), and YouTube deployment.
+**Thesis:** The Master’s thesis LaTeX project is kept **offline** (local / Overleaf), not in this GitHub repo. It cites this paper as `\cite{massomy2026deepdari}` and extends it with A0–A5, C1 filtering, and YouTube deployment.
 
 | Also in this folder | Role |
 |---------------------|------|
@@ -17,4 +17,4 @@ This folder holds the **conference manuscript** that is prior work for the Maste
 | `thesis_readiness_checklist.md` | Gaps vs Ch. 6–7 / submission todos |
 | `thesis_dataset_notes.md` | Dataset notes for the write-up |
 
-Do not treat `paper.tex` as the thesis; use `Master_Thesis_Massomy/` for the full thesis write-up.
+Do not treat `paper.tex` as the thesis.
