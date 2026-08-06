@@ -61,6 +61,25 @@ python -m deployment.youtube_batch --video-id VIDEO_ID --max-comments 500
 python -m deployment.youtube_batch --channel-id CHANNEL_ID --max-videos 5 --max-comments 1000
 ```
 
+Video and channel arguments accept **raw IDs or full YouTube links**. The CLI and New Job form normalize them the same way:
+
+| Paste | Resolved to |
+|-------|-------------|
+| `https://www.youtube.com/watch?v=…`, `youtu.be/…`, `/shorts/…`, `/embed/…` | 11-char video id |
+| Bare 11-char id | unchanged |
+| `https://www.youtube.com/channel/UC…` or bare `UC…` | channel id |
+| `https://www.youtube.com/@Handle` or `@Handle` | `UC…` via YouTube API (`channels.list(forHandle=…)`) |
+| `/c/…` or `/user/…` | best-effort resolve via API search |
+
+Examples:
+
+```bash
+python -m deployment.youtube_batch --video-id 'https://www.youtube.com/watch?v=16e75OffBTA'
+python -m deployment.youtube_batch --channel-id '@SomeHandle' --max-videos 5
+```
+
+Invalid pastes return a clear error before the job starts.
+
 Outputs: `outputs/deployment/youtube_batch_<timestamp>/`
 
 ## Professional dashboard (EN / FA)

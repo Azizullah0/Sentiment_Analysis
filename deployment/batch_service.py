@@ -644,11 +644,14 @@ def start_batch_job(
     min_confidence: float = DEFAULT_MIN_CONFIDENCE,
     model_path: Optional[str] = None,
 ) -> Dict[str, Any]:
+    from .youtube_urls import normalize_job_inputs
+
     api_key = os.environ.get("YOUTUBE_API_KEY", "").strip()
     if not api_key:
         raise ValueError("YOUTUBE_API_KEY is not set on the server")
-    if not (video_ids or channel_id):
-        raise ValueError("Provide video_ids and/or channel_id")
+
+    youtube = build_youtube_client(api_key)
+    video_ids, channel_id = normalize_job_inputs(video_ids, channel_id, youtube)
 
     job_id = uuid.uuid4().hex[:12]
     job = {

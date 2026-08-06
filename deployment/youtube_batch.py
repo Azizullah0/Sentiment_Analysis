@@ -20,6 +20,7 @@ from deployment.batch_service import (  # noqa: E402
     run_batch,
 )
 from deployment.predictor import DEFAULT_MIN_CONFIDENCE  # noqa: E402
+from deployment.youtube_urls import normalize_job_inputs  # noqa: E402
 
 # Re-export for youtube_monitor and external imports
 __all__ = ["build_youtube_client", "main", "parse_args"]
@@ -29,8 +30,17 @@ def parse_args(argv: Optional[Sequence[str]] = None) -> argparse.Namespace:
     p = argparse.ArgumentParser(
         description="Label real YouTube comments with DEEP-Dari (Others if uncertain)."
     )
-    p.add_argument("--video-id", action="append", default=[], help="YouTube video ID.")
-    p.add_argument("--channel-id", default=None, help="Channel UC… ID.")
+    p.add_argument(
+        "--video-id",
+        action="append",
+        default=[],
+        help="YouTube video ID or URL (watch, youtu.be, shorts, embed).",
+    )
+    p.add_argument(
+        "--channel-id",
+        default=None,
+        help="Channel UC… ID, URL, or @handle.",
+    )
     p.add_argument("--max-videos", type=int, default=5)
     p.add_argument("--max-comments", type=int, default=500)
     p.add_argument("--model-path", default=None)
@@ -51,10 +61,14 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         print("ERROR: Provide --video-id and/or --channel-id.")
         return 1
     try:
+        youtube = build_youtube_client(api_key)
+        video_ids, channel_id = normalize_job_inputs(
+            args.video_id, args.channel_id, youtube
+        )
         result = run_batch(
             api_key=api_key,
-            video_ids=args.video_id,
-            channel_id=args.channel_id,
+            video_ids=video_ids,
+            channel_id=channel_id,
             max_videos=args.max_videos,
             max_comments=args.max_comments,
             model_path=args.model_path,

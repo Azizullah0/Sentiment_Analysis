@@ -1,6 +1,40 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { api } from "../api";
+
+/** Client-side video id extract (regex only; mirrors deployment/youtube_urls.py). */
+function extractVideoId(text) {
+  const raw = (text || "").trim().replace(/^["']|["']$/g, "");
+  if (!raw) return null;
+  if (/^[A-Za-z0-9_-]{11}$/.test(raw)) return raw;
+
+  let url;
+  try {
+    url = new URL(raw.includes("://") ? raw : `https://${raw}`);
+  } catch {
+    return null;
+  }
+  const host = url.hostname.replace(/^www\./, "").toLowerCase();
+  if (host === "youtu.be") {
+    const id = url.pathname.replace(/^\//, "").split("/")[0];
+    return /^[A-Za-z0-9_-]{11}$/.test(id) ? id : null;
+  }
+  if (host.includes("youtube.com")) {
+    const v = url.searchParams.get("v");
+    if (v && /^[A-Za-z0-9_-]{11}$/.test(v)) return v;
+    const m = url.pathname.match(/^\/(shorts|embed|live|v)\/([A-Za-z0-9_-]{11})/);
+    if (m) return m[2];
+  }
+  return null;
+}
+
+function tokenizeVideoInput(text) {
+  return text
+    .split(/[\n,]+/)
+    .flatMap((line) => line.trim().split(/\s+/))
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
 
 export default function JobPage({ t }) {
   const [videoText, setVideoText] = useState("");
@@ -11,6 +45,15 @@ export default function JobPage({ t }) {
   const [job, setJob] = useState(null);
   const [err, setErr] = useState(null);
   const [busy, setBusy] = useState(false);
+
+  const parsedPreview = useMemo(() => {
+    const ids = [];
+    for (const token of tokenizeVideoInput(videoText)) {
+      const id = extractVideoId(token);
+      if (id && !ids.includes(id)) ids.push(id);
+    }
+    return ids;
+  }, [videoText]);
 
   useEffect(() => {
     if (!job?.job_id || job.status === "done" || job.status === "failed") return undefined;
@@ -27,10 +70,8 @@ export default function JobPage({ t }) {
     e.preventDefault();
     setErr(null);
     setBusy(true);
-    const video_ids = videoText
-      .split(/[\n,\s]+/)
-      .map((s) => s.trim())
-      .filter(Boolean);
+    // Send raw tokens (URLs or ids); server normalizes and resolves @handles
+    const video_ids = tokenizeVideoInput(videoText);
     try {
       const started = await api.startJob({
         video_ids,
@@ -56,16 +97,24 @@ export default function JobPage({ t }) {
           <textarea
             value={videoText}
             onChange={(e) => setVideoText(e.target.value)}
-            placeholder="16e75OffBTA"
+            placeholder={t.job_videos_ph}
           />
+          {parsedPreview.length > 0 && (
+            <p className="muted" style={{ margin: "0.35rem 0 0", fontSize: "0.85rem" }}>
+              {t.job_parsed_ids}: {parsedPreview.join(", ")}
+            </p>
+          )}
         </label>
         <label>
           {t.job_channel}
           <input
             value={channelId}
             onChange={(e) => setChannelId(e.target.value)}
-            placeholder="UCxxxxxxxx"
+            placeholder={t.job_channel_ph}
           />
+          <p className="muted" style={{ margin: "0.35rem 0 0", fontSize: "0.85rem" }}>
+            {t.job_channel_hint}
+          </p>
         </label>
         <label>
           {t.job_max_videos}
