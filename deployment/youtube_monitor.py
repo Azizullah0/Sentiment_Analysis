@@ -2,7 +2,7 @@
 Optional live-chat monitor (run only after youtube_batch works).
 
 Polls liveChatMessages for an active broadcast, labels comments with the same
-Others abstention rule, and appends Fear/Anger to the review queue.
+Excluded vs Others rules, and appends Fear/Anger to the review queue.
 
 Usage:
   set YOUTUBE_API_KEY=...
@@ -25,7 +25,7 @@ from deployment.predictor import (  # noqa: E402
     EmotionPredictor,
     append_review_queue,
 )
-from deployment.youtube_batch import build_youtube_client  # noqa: E402
+from deployment.batch_service import build_youtube_client  # noqa: E402
 
 
 def get_live_chat_id(youtube, video_id: str) -> str:

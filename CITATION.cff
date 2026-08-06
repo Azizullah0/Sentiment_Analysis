@@ -1,0 +1,30 @@
+# Citation File Format — https://citation-file-format.github.io/
+
+cff-version: 1.2.0
+message: If you use DEEP-Dari or this repository, please cite the conference paper (and the thesis when published).
+type: software
+title: "DEEP-Dari: Persian/Dari emotion classification with ParsBERT and YouTube deployment"
+authors:
+  - family-names: Massomy
+    given-names: Azizullah
+repository-code: "https://github.com/Azizullah0/Sentiment_Analysis"
+license: MIT
+keywords:
+  - Dari
+  - Persian
+  - emotion classification
+  - ParsBERT
+  - low-resource NLP
+  - data augmentation
+preferred-citation:
+  type: article
+  authors:
+    - family-names: Massomy
+      given-names: Azizullah
+    - family-names: Winiwarter
+      given-names: Werner
+    - family-names: Dolezal
+      given-names: Christian
+  title: "DEEP-Dari: Emotion Classification for Dari Social Media"
+  year: 2026
+  notes: "Manuscript under peer review (iiWAS 2026)."

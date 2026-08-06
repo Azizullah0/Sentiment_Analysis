@@ -2,6 +2,8 @@
 .ipynb_checkpoints/
 __pycache__/
 *.pyc
+.env
+*.env.local
 
 Models/
 outputs/
@@ -15,3 +17,8 @@ config/__pycache__/
 scripts/__pycache__/
 deployment/__pycache__/
 deployment/.env
+deployment/dashboard/node_modules/
+deployment/dashboard/dist/
+
+# Foreign thesis template (do not commit)
+Master_Thesis_Cvetanovic/
