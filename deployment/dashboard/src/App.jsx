@@ -7,6 +7,7 @@ import RunsPage from "./pages/RunsPage";
 import RunDetailPage from "./pages/RunDetailPage";
 import JobPage from "./pages/JobPage";
 import QueuePage from "./pages/QueuePage";
+import AboutPage from "./pages/AboutPage";
 
 const DICTS = { en, fa };
 
@@ -54,6 +55,7 @@ export default function App() {
           </NavLink>
           <NavLink to="/job">{t.nav_job}</NavLink>
           <NavLink to="/queue">{t.nav_queue}</NavLink>
+          <NavLink to="/about">{t.nav_about}</NavLink>
           <div className="lang-toggle" role="group" aria-label="Language">
             <button
               type="button"
@@ -78,6 +80,7 @@ export default function App() {
         <Route path="/runs/:runId" element={<RunDetailPage t={t} />} />
         <Route path="/job" element={<JobPage t={t} />} />
         <Route path="/queue" element={<QueuePage t={t} />} />
+        <Route path="/about" element={<AboutPage t={t} />} />
       </Routes>
     </div>
   );

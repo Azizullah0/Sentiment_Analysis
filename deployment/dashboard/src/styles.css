@@ -413,3 +413,30 @@ td.rtl-text {
     grid-template-columns: 1fr;
   }
 }
+
+.about-card {
+  max-width: 720px;
+}
+
+.about-steps {
+  margin: 1rem 0;
+  padding-inline-start: 1.25rem;
+  line-height: 1.55;
+}
+
+.about-defs {
+  margin: 1.25rem 0 0;
+  display: grid;
+  gap: 0.85rem;
+}
+
+.about-defs dt {
+  font-weight: 600;
+  color: var(--text);
+}
+
+.about-defs dd {
+  margin: 0.2rem 0 0;
+  color: var(--muted);
+  font-size: 0.95rem;
+}

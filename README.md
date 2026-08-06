@@ -1,8 +1,20 @@
-# Persian Emotion Classification with ParsBERT
+# DEEP-Dari — Persian/Dari Emotion Classification
 
-This repository contains the training and inference code for a Persian/Dari emotion classification project built on top of `HooshvareLab/bert-base-parsbert-uncased`. The model is designed to classify social media text into eight emotion categories: `Hope`, `Happy`, `Neutral`, `Surprise`, `Disgust`, `Sad`, `Anger`, and `Fear`.
+Eight-class emotion classification for Dari/Persian social media (`Hope`, `Happy`, `Neutral`, `Surprise`, `Disgust`, `Sad`, `Anger`, `Fear`) on top of [`HooshvareLab/bert-base-parsbert-uncased`](https://huggingface.co/HooshvareLab/bert-base-parsbert-uncased), with culturally grounded minority-class augmentation and a YouTube monitoring deployment.
 
-The codebase has been simplified to use a single training script, `scripts/train.py`, which covers all supported experiment settings through command-line presets.
+| Best model (A4) | Value |
+|-----------------|------:|
+| Accuracy | **86.12%** |
+| Macro-F1 | **0.857** |
+| Fear F1 | **0.950** |
+
+**Thesis:** [`Master_Thesis_Massomy/`](Master_Thesis_Massomy/) (UniVie CS format, XeLaTeX)  
+**Conference paper (prior work, under review):** [`docs/paper.tex`](docs/paper.tex)  
+**Reproducibility:** [`docs/appendix_reproducibility.md`](docs/appendix_reproducibility.md)  
+**Submission checklist:** [`docs/thesis_readiness_checklist.md`](docs/thesis_readiness_checklist.md)  
+**Cite:** see [`CITATION.cff`](CITATION.cff)
+
+Training is driven by `scripts/train.py` and ablation runners; live labeling lives under [`deployment/`](deployment/README.md) (FastAPI + bilingual EN/FA dashboard).
 
 ## Repository Overview
 
