@@ -159,7 +159,10 @@ export default function RunDetailPage({ t }) {
         ← {t.back}
       </Link>
       <h2 style={{ marginBottom: "0.25rem" }}>{runId}</h2>
-      <p className="muted">{t.overview}</p>
+      <p className="muted">
+        {t.overview}
+        {s.model_id ? ` · ${t.job_model_short} ${s.model_id}` : ""}
+      </p>
 
       <div className="card view-toggle-card">
         <div className="toolbar" style={{ marginBottom: "0.35rem" }}>

@@ -27,6 +27,10 @@ from deployment.batch_service import (  # noqa: E402
     save_review_annotations,
     start_batch_job,
 )
+from deployment.model_registry import (  # noqa: E402
+    DEFAULT_MODEL_ID,
+    list_models,
+)
 from deployment.predictor import (  # noqa: E402
     DEFAULT_MIN_CONFIDENCE,
     EmotionPredictor,
@@ -79,6 +83,7 @@ class JobRequest(BaseModel):
     max_videos: int = 5
     max_comments: int = 500
     min_confidence: float = DEFAULT_MIN_CONFIDENCE
+    model_id: str = DEFAULT_MODEL_ID
 
 
 class ReviewUpdate(BaseModel):
@@ -252,6 +257,11 @@ def api_review_queue(limit: int = Query(200, ge=1, le=2000)):
     return {"items": load_review_queue(limit=limit)}
 
 
+@app.get("/api/models")
+def api_list_models():
+    return {"models": list_models(), "default": DEFAULT_MODEL_ID}
+
+
 @app.post("/api/jobs")
 def api_start_job(body: JobRequest):
     try:
@@ -261,6 +271,7 @@ def api_start_job(body: JobRequest):
             max_videos=body.max_videos,
             max_comments=body.max_comments,
             min_confidence=body.min_confidence,
+            model_id=body.model_id or DEFAULT_MODEL_ID,
         )
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc

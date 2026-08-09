@@ -37,6 +37,7 @@ export const api = {
       body: JSON.stringify({ items }),
     }),
   queue: () => request("/api/review-queue"),
+  models: () => request("/api/models"),
   startJob: (body) =>
     request("/api/jobs", { method: "POST", body: JSON.stringify(body) }),
   job: (id) => request(`/api/jobs/${id}`),

@@ -42,9 +42,16 @@ export default function JobPage({ t }) {
   const [maxVideos, setMaxVideos] = useState(5);
   const [maxComments, setMaxComments] = useState(200);
   const [minConfidence, setMinConfidence] = useState(0.5);
+  const [models, setModels] = useState([]);
+  const [modelId, setModelId] = useState("A4");
   const [job, setJob] = useState(null);
   const [err, setErr] = useState(null);
   const [busy, setBusy] = useState(false);
+
+  const selectedModel = useMemo(
+    () => models.find((m) => m.id === modelId),
+    [models, modelId]
+  );
 
   const parsedPreview = useMemo(() => {
     const ids = [];
@@ -54,6 +61,21 @@ export default function JobPage({ t }) {
     }
     return ids;
   }, [videoText]);
+
+  useEffect(() => {
+    api
+      .models()
+      .then((d) => {
+        const list = d.models || [];
+        setModels(list);
+        const def = d.default || "A4";
+        const pick =
+          list.find((m) => m.id === def && m.available) ||
+          list.find((m) => m.available);
+        if (pick) setModelId(pick.id);
+      })
+      .catch((e) => setErr(e.message));
+  }, []);
 
   useEffect(() => {
     if (!job?.job_id || job.status === "done" || job.status === "failed") return undefined;
@@ -70,7 +92,6 @@ export default function JobPage({ t }) {
     e.preventDefault();
     setErr(null);
     setBusy(true);
-    // Send raw tokens (URLs or ids); server normalizes and resolves @handles
     const video_ids = tokenizeVideoInput(videoText);
     try {
       const started = await api.startJob({
@@ -79,6 +100,7 @@ export default function JobPage({ t }) {
         max_videos: Number(maxVideos),
         max_comments: Number(maxComments),
         min_confidence: Number(minConfidence),
+        model_id: modelId,
       });
       setJob(started);
     } catch (ex) {
@@ -92,6 +114,26 @@ export default function JobPage({ t }) {
     <section>
       <h2 style={{ marginTop: 0 }}>{t.job_title}</h2>
       <form className="form-grid card" onSubmit={onStart}>
+        <label>
+          {t.job_model}
+          <select
+            value={modelId}
+            onChange={(e) => setModelId(e.target.value)}
+            disabled={!models.length}
+          >
+            {models.map((m) => (
+              <option key={m.id} value={m.id} disabled={!m.available}>
+                {m.label}
+                {!m.available ? ` (${t.job_model_unavailable})` : ""}
+              </option>
+            ))}
+          </select>
+          {selectedModel && (
+            <p className="muted" style={{ margin: "0.35rem 0 0", fontSize: "0.85rem" }}>
+              {selectedModel.description}
+            </p>
+          )}
+        </label>
         <label>
           {t.job_videos}
           <textarea
@@ -147,7 +189,11 @@ export default function JobPage({ t }) {
             onChange={(e) => setMinConfidence(e.target.value)}
           />
         </label>
-        <button className="btn" type="submit" disabled={busy}>
+        <button
+          className="btn"
+          type="submit"
+          disabled={busy || (selectedModel && !selectedModel.available)}
+        >
           {t.job_start}
         </button>
         {err && <p className="status-bad">{err}</p>}
@@ -157,6 +203,11 @@ export default function JobPage({ t }) {
         <div className="card" style={{ marginTop: "1rem" }}>
           <h3>
             {t.job_status}: <span className="badge">{job.status}</span>
+            {job.params?.model_id ? (
+              <span className="muted" style={{ marginInlineStart: "0.5rem", fontSize: "0.9rem" }}>
+                · {t.job_model_short} {job.params.model_id}
+              </span>
+            ) : null}
           </h3>
           {job.run_id && (
             <p>

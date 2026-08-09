@@ -197,6 +197,9 @@ def build_summary(
     rows: Sequence[Dict[str, Any]],
     min_confidence: float,
     video_ids: Sequence[str],
+    *,
+    model_id: Optional[str] = None,
+    model_path: Optional[str] = None,
 ) -> Dict[str, Any]:
     counts_all = Counter(r["label"] for r in rows)
     usable = [r for r in rows if r["label"] != EXCLUDED_LABEL]
@@ -236,6 +239,8 @@ def build_summary(
         "others_rate": (n_others / n_fetched) if n_fetched else 0.0,
         "video_ids": list(video_ids),
         "min_confidence": min_confidence,
+        "model_id": model_id,
+        "model_path": model_path,
         "label_counts": label_counts_usable,
         "label_counts_usable": label_counts_usable,
         "label_counts_all": label_counts_all,
@@ -332,6 +337,7 @@ def run_batch(
     max_videos: int = 5,
     max_comments: int = 500,
     model_path: Optional[str] = None,
+    model_id: Optional[str] = None,
     min_confidence: float = DEFAULT_MIN_CONFIDENCE,
     batch_size: int = 32,
     out_dir: Optional[str] = None,
@@ -361,10 +367,25 @@ def run_batch(
             "No comments fetched (disabled comments, private video, or empty)."
         )
 
-    _log(f"Loading model and labeling {len(comments)} comments...")
-    predictor = EmotionPredictor(
-        model_path=model_path, min_confidence=min_confidence
+    resolved_path = model_path
+    if model_id and not resolved_path:
+        from deployment.model_registry import resolve_model_id
+
+        resolved = resolve_model_id(model_id)
+        model_id = resolved["model_id"]
+        resolved_path = resolved["model_path"]
+
+    _log(
+        f"Loading model {model_id or 'default'} and labeling {len(comments)} comments..."
     )
+    predictor = EmotionPredictor(
+        model_path=resolved_path, min_confidence=min_confidence
+    )
+    if not model_id:
+        # Infer id from path basename when only model_path was passed
+        base = os.path.basename(os.path.normpath(predictor.model_path))
+        if base.upper() in ("A0", "A1", "A4"):
+            model_id = base.upper()
     labeled = label_comments(
         predictor, comments, min_confidence=min_confidence, batch_size=batch_size
     )
@@ -380,7 +401,13 @@ def run_batch(
     df.to_csv(csv_path, index=False, encoding="utf-8-sig")
     write_sqlite(sqlite_path, labeled)
 
-    summary = build_summary(labeled, min_confidence, video_ids)
+    summary = build_summary(
+        labeled,
+        min_confidence,
+        video_ids,
+        model_id=model_id,
+        model_path=predictor.model_path,
+    )
     with open(os.path.join(out_dir, "summary.json"), "w", encoding="utf-8") as f:
         json.dump(summary, f, ensure_ascii=False, indent=2)
 
@@ -458,6 +485,7 @@ def list_runs() -> List[Dict[str, Any]]:
                 "label_counts_all": summary.get("label_counts_all"),
                 "video_ids": summary.get("video_ids", []),
                 "min_confidence": summary.get("min_confidence"),
+                "model_id": summary.get("model_id"),
             }
         )
     return runs
@@ -643,7 +671,9 @@ def start_batch_job(
     max_comments: int = 500,
     min_confidence: float = DEFAULT_MIN_CONFIDENCE,
     model_path: Optional[str] = None,
+    model_id: Optional[str] = None,
 ) -> Dict[str, Any]:
+    from .model_registry import DEFAULT_MODEL_ID, resolve_model_id
     from .youtube_urls import normalize_job_inputs
 
     api_key = os.environ.get("YOUTUBE_API_KEY", "").strip()
@@ -652,6 +682,14 @@ def start_batch_job(
 
     youtube = build_youtube_client(api_key)
     video_ids, channel_id = normalize_job_inputs(video_ids, channel_id, youtube)
+
+    if model_path:
+        resolved_id = (model_id or DEFAULT_MODEL_ID).strip().upper()
+        resolved_path = model_path
+    else:
+        resolved = resolve_model_id(model_id or DEFAULT_MODEL_ID)
+        resolved_id = resolved["model_id"]
+        resolved_path = resolved["model_path"]
 
     job_id = uuid.uuid4().hex[:12]
     job = {
@@ -669,6 +707,8 @@ def start_batch_job(
             "max_videos": max_videos,
             "max_comments": max_comments,
             "min_confidence": min_confidence,
+            "model_id": resolved_id,
+            "model_path": resolved_path,
         },
     }
     with _jobs_lock:
@@ -691,7 +731,8 @@ def start_batch_job(
                 max_videos=max_videos,
                 max_comments=max_comments,
                 min_confidence=min_confidence,
-                model_path=model_path or os.environ.get("DEPLOYMENT_MODEL_PATH"),
+                model_path=resolved_path,
+                model_id=resolved_id,
                 log=_log,
             )
             with _jobs_lock:

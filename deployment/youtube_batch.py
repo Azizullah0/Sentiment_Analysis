@@ -19,6 +19,7 @@ from deployment.batch_service import (  # noqa: E402
     build_youtube_client,
     run_batch,
 )
+from deployment.model_registry import DEFAULT_MODEL_ID, MODEL_CATALOG  # noqa: E402
 from deployment.predictor import DEFAULT_MIN_CONFIDENCE  # noqa: E402
 from deployment.youtube_urls import normalize_job_inputs  # noqa: E402
 
@@ -43,7 +44,17 @@ def parse_args(argv: Optional[Sequence[str]] = None) -> argparse.Namespace:
     )
     p.add_argument("--max-videos", type=int, default=5)
     p.add_argument("--max-comments", type=int, default=500)
-    p.add_argument("--model-path", default=None)
+    p.add_argument(
+        "--model-id",
+        default=DEFAULT_MODEL_ID,
+        choices=sorted(MODEL_CATALOG.keys()),
+        help="Ablation checkpoint: A0 (no templates), A1 (Fear), A4 (full stack).",
+    )
+    p.add_argument(
+        "--model-path",
+        default=None,
+        help="Optional absolute checkpoint path (overrides --model-id).",
+    )
     p.add_argument("--min-confidence", type=float, default=DEFAULT_MIN_CONFIDENCE)
     p.add_argument("--batch-size", type=int, default=32)
     p.add_argument("--out-dir", default=None)
@@ -72,6 +83,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             max_videos=args.max_videos,
             max_comments=args.max_comments,
             model_path=args.model_path,
+            model_id=None if args.model_path else args.model_id,
             min_confidence=args.min_confidence,
             batch_size=args.batch_size,
             out_dir=args.out_dir,

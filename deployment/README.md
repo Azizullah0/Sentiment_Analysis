@@ -20,13 +20,27 @@ export YOUTUBE_API_KEY=your-key
 $env:YOUTUBE_API_KEY = "your-key"
 ```
 
-Model resolution order (first existing checkpoint wins):
+Model resolution order for the interactive `/api/predict` singleton (first existing checkpoint wins):
 
 1. `outputs/ablation/A4`
 2. `Models/parsbert_emotion_incremental`
 3. `Models/parsbert_emotion`
 
 Override with `--model-path` or `DEPLOYMENT_MODEL_PATH`.
+
+**Batch jobs (New job UI / CLI)** can select an ablation checkpoint by id:
+
+| `model_id` | Path | Role |
+|------------|------|------|
+| `A4` (default) | `outputs/ablation/A4` | Full template stack (recommended) |
+| `A0` | `outputs/ablation/A0` | No templates (baseline) |
+| `A1` | `outputs/ablation/A1` | Fear templates only |
+
+```bash
+python -m deployment.youtube_batch --video-id VIDEO --model-id A0 --max-comments 100
+```
+
+`GET /api/models` lists which of these folders exist on the server (`config.json` present). Unavailable options are disabled in the dashboard.
 
 ## Filter-then-classify (Excluded vs Others)
 

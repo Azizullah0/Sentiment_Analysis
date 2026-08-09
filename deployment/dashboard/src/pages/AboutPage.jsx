@@ -3,6 +3,7 @@ export default function AboutPage({ t }) {
     <section className="card about-card">
       <h2 style={{ marginTop: 0 }}>{t.about_title}</h2>
       <p>{t.about_intro}</p>
+      <p>{t.about_models}</p>
       <ol className="about-steps">
         <li>{t.about_step_clean}</li>
         <li>{t.about_step_gate}</li>

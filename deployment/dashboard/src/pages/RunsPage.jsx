@@ -31,6 +31,12 @@ export default function RunsPage({ t }) {
             <div>
               <strong>{r.run_id}</strong>
               <div className="meta">
+                {r.model_id ? (
+                  <>
+                    {t.job_model_short} {r.model_id}
+                    {" · "}
+                  </>
+                ) : null}
                 {r.n_usable != null ? r.n_usable : r.n_comments} {t.usable_count}
                 {" · "}
                 {t.others_rate}{" "}
