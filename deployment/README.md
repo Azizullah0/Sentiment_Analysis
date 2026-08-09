@@ -30,17 +30,19 @@ Override with `--model-path` or `DEPLOYMENT_MODEL_PATH`.
 
 **Batch jobs (New job UI / CLI)** can select an ablation checkpoint by id:
 
-| `model_id` | Path | Role |
-|------------|------|------|
-| `A4` (default) | `outputs/ablation/A4` | Full template stack (recommended) |
-| `A0` | `outputs/ablation/A0` | No templates (baseline) |
-| `A1` | `outputs/ablation/A1` | Fear templates only |
+| `model_id` | Primary path | Automatic fallbacks |
+|------------|--------------|---------------------|
+| `A4` (default) | `outputs/ablation/A4` | `A4/seed_42/` (multi-seed); else `Models/parsbert_emotion_incremental` if trained on `allAug` |
+| `A0` | `outputs/ablation/A0` | — |
+| `A1` | `outputs/ablation/A1` | Legacy `outputs/full_8label_aug_*` whose `training_metadata.json` uses `Combined_Labeled_Dataset_with_fearAug.csv` (highest `checkpoint-*`) |
+
+Also accepts `config.json` under `checkpoint-<step>/` inside a run folder.
 
 ```bash
 python -m deployment.youtube_batch --video-id VIDEO --model-id A0 --max-comments 100
 ```
 
-`GET /api/models` lists which of these folders exist on the server. A run is available if `config.json` is at the run root **or** under a multi-seed subfolder (`seed_42` preferred, then any `seed_<N>`). Unavailable options are disabled in the dashboard.
+`GET /api/models` lists availability after these lookups. Unavailable options are disabled in the dashboard. No manual symlinks required when the legacy Fear-aug or multi-seed layouts are present.
 
 ## Filter-then-classify (Excluded vs Others)
 
