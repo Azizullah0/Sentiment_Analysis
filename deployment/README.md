@@ -40,7 +40,7 @@ Override with `--model-path` or `DEPLOYMENT_MODEL_PATH`.
 python -m deployment.youtube_batch --video-id VIDEO --model-id A0 --max-comments 100
 ```
 
-`GET /api/models` lists which of these folders exist on the server (`config.json` present). Unavailable options are disabled in the dashboard.
+`GET /api/models` lists which of these folders exist on the server. A run is available if `config.json` is at the run root **or** under a multi-seed subfolder (`seed_42` preferred, then any `seed_<N>`). Unavailable options are disabled in the dashboard.
 
 ## Filter-then-classify (Excluded vs Others)
 
