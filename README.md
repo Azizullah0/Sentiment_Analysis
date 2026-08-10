@@ -8,12 +8,9 @@ Eight-class emotion classification for Dari/Persian social media (`Hope`, `Happy
 | Macro-F1 | **0.857** |
 | Fear F1 | **0.950** |
 
-**Conference paper (prior work, under review):** [`docs/paper.tex`](docs/paper.tex)  
-**Reproducibility:** [`docs/appendix_reproducibility.md`](docs/appendix_reproducibility.md)  
-**Submission checklist:** [`docs/thesis_readiness_checklist.md`](docs/thesis_readiness_checklist.md)  
-**Cite:** see [`CITATION.cff`](CITATION.cff)  
+**Cite:** see [`CITATION.cff`](CITATION.cff) (conference paper under review; manuscript not in this repo)
 
-The full Master’s thesis PDF/LaTeX project is **not** in this repository (kept private / Overleaf).
+The Master’s thesis, conference paper, and private `docs/` notes are **not** published here (kept local / Overleaf).
 
 Training is driven by `scripts/train.py` and ablation runners; live labeling lives under [`deployment/`](deployment/README.md) (FastAPI + bilingual EN/FA dashboard).
 
@@ -34,7 +31,6 @@ Training is driven by `scripts/train.py` and ablation runners; live labeling liv
 - `augmentations/fear_augmenter.py`: Fear template augmentation
 - `augmentations/emotion_augmenter.py`: Surprise, Anger, Disgust template augmentation
 - `augmentations/back_translation_augmenter.py`: NLLB round-trip augmentation from 4K gold seed
-- `docs/appendix_reproducibility.md`: full command reference for thesis experiments
 - `deployment/`: YouTube comment labeling + FastAPI + bilingual EN/FA dashboard (see [deployment/README.md](deployment/README.md))
 
 ## Requirements
@@ -161,7 +157,7 @@ The script prints a **Table 1 helper** with A0–A5 row counts from disk and val
 - **`[EXPECTED] Ablation row-count monotonicity from A2`** — A2 (394,476) can be smaller than A1 (400,691) because `merge_augmented_datasets.py` deduplicates when adding Surprise; A2–A5 should stay duplicate-free.
 - **`[WARN] Duplicate texts in pseudo-labeled base`** — A0/A1 and confidence splits inherit ~15,215 duplicate normalized texts from the pseudo-labeled base. Document in the thesis; do not dedupe and re-train completed ablation runs.
 
-Verified Table 1 row counts and copy-ready limitations text: [docs/thesis_dataset_notes.md](docs/thesis_dataset_notes.md).
+Verified Table 1 row counts live in local notes (not published); use `scripts/audit_datasets.py` for on-disk checks.
 
 ## Ablation Study
 

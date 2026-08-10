@@ -23,3 +23,6 @@ deployment/dashboard/dist/
 # Thesis write-ups stay local / Overleaf only — never publish to GitHub
 Master_Thesis_Massomy/
 Master_Thesis_Cvetanovic/
+
+# Manuscripts, reports, reproducibility appendix — local / Overleaf only
+docs/
