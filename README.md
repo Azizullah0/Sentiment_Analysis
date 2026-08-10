@@ -14,22 +14,31 @@ Training is driven by `scripts/train.py` and ablation runners; live labeling liv
 
 ## Repository Overview
 
-- `scripts/train.py`: main training entrypoint
-- `scripts/run_ablation.py`: ablation experiment runner (one run at a time)
-- `scripts/run_multiseed.py`: multi-seed stability runner (A4, seeds 41–45)
-- `scripts/run_backtranslation.py`: back-translation pipeline (spot-check → generate → merge → A5)
-- `scripts/merge_augmented_datasets.py`: merge template/BT augmentations into ablation CSVs
-- `scripts/score_pseudo_labels.py`: score pseudo-labels with seed model confidence
-- `scripts/prepare_confidence_splits.py`: fixed holdout + filtered train pools (C0–C3)
-- `scripts/run_confidence_experiments.py`: confidence threshold training experiments
-- `scripts/evaluate_holdout.py`: re-evaluate a trained model on the fixed holdout
-- `scripts/audit_datasets.py`: dataset inventory, label stats, and merge/split cross-checks
-- `scripts/predict.py`: inference script for loading a trained model and running predictions
-- `config/paths.py`: path configuration for datasets, models, and output directories
-- `augmentations/fear_augmenter.py`: Fear template augmentation
-- `augmentations/emotion_augmenter.py`: Surprise, Anger, Disgust template augmentation
-- `augmentations/back_translation_augmenter.py`: NLLB round-trip augmentation from 4K gold seed
-- `deployment/`: YouTube comment labeling + FastAPI + bilingual EN/FA dashboard (see [deployment/README.md](deployment/README.md))
+There is **one** training script (`scripts/train.py`). The other `scripts/*.py` files prepare data, call `train.py` for named experiments, or evaluate / predict.
+
+**Train**
+- `scripts/train.py` — ParsBERT fine-tuning (used by all experiment runners)
+
+**Experiment runners** (invoke `train.py`)
+- `scripts/run_ablation.py` — A0–A5 ablation (one run at a time)
+- `scripts/run_multiseed.py` — multi-seed A4 stability (seeds 41–45)
+- `scripts/run_confidence_experiments.py` — C0–C3 confidence-threshold runs
+- `scripts/run_backtranslation.py` — back-translation pipeline → A5
+
+**Data prep / checks**
+- `scripts/merge_augmented_datasets.py` — merge template/BT rows into ablation CSVs
+- `scripts/score_pseudo_labels.py` — score ~400k pseudo-labels with seed-model confidence
+- `scripts/prepare_confidence_splits.py` — fixed holdout + filtered train pools
+- `scripts/audit_datasets.py` — dataset inventory and split/merge checks
+
+**Eval / inference**
+- `scripts/evaluate_holdout.py` — score a saved checkpoint on the fixed holdout
+- `scripts/predict.py` — run predictions on new text
+
+**Shared code**
+- `config/paths.py` — dataset / model / output paths
+- `augmentations/` — Fear, Surprise/Anger/Disgust templates; NLLB back-translation
+- `deployment/` — YouTube labeling API + bilingual EN/FA dashboard ([deployment/README.md](deployment/README.md))
 
 ## Requirements
 
