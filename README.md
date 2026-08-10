@@ -10,8 +10,6 @@ Eight-class emotion classification for Dari/Persian social media (`Hope`, `Happy
 
 **Cite:** see [`CITATION.cff`](CITATION.cff) (conference paper under review; manuscript not in this repo)
 
-The Master’s thesis, conference paper, and private `docs/` notes are **not** published here (kept local / Overleaf).
-
 Training is driven by `scripts/train.py` and ablation runners; live labeling lives under [`deployment/`](deployment/README.md) (FastAPI + bilingual EN/FA dashboard).
 
 ## Repository Overview
