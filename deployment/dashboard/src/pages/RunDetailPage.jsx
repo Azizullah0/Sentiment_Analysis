@@ -315,20 +315,21 @@ export default function RunDetailPage({ t }) {
               <h3>{t.distribution}</h3>
               <ResponsiveContainer width="100%" height={200}>
                 <BarChart data={chartData}>
-                  <CartesianGrid stroke="rgba(232,226,214,0.08)" vertical={false} />
+                  <CartesianGrid stroke="rgba(26,34,28,0.08)" vertical={false} />
                   <XAxis
                     dataKey="label"
-                    tick={{ fill: "#9a927f", fontSize: 10 }}
+                    tick={{ fill: "#5c675f", fontSize: 10 }}
                     interval={0}
                     angle={-20}
                     textAnchor="end"
                     height={48}
                   />
-                  <YAxis tick={{ fill: "#9a927f", fontSize: 10 }} allowDecimals={false} />
+                  <YAxis tick={{ fill: "#5c675f", fontSize: 10 }} allowDecimals={false} />
                   <Tooltip
                     contentStyle={{
-                      background: "#161c18",
-                      border: "1px solid rgba(232,226,214,0.15)",
+                      background: "#ffffff",
+                      border: "1px solid rgba(26,34,28,0.15)",
+                      color: "#1a221c",
                     }}
                   />
                   <Bar dataKey="count" radius={[4, 4, 0, 0]}>
@@ -344,22 +345,23 @@ export default function RunDetailPage({ t }) {
               {videoChart.length ? (
                 <ResponsiveContainer width="100%" height={200}>
                   <BarChart data={videoChart} layout="vertical" margin={{ left: 12 }}>
-                    <CartesianGrid stroke="rgba(232,226,214,0.08)" horizontal={false} />
-                    <XAxis type="number" tick={{ fill: "#9a927f", fontSize: 10 }} />
+                    <CartesianGrid stroke="rgba(26,34,28,0.08)" horizontal={false} />
+                    <XAxis type="number" tick={{ fill: "#5c675f", fontSize: 10 }} />
                     <YAxis
                       type="category"
                       dataKey="name"
                       width={64}
-                      tick={{ fill: "#9a927f", fontSize: 10 }}
+                      tick={{ fill: "#5c675f", fontSize: 10 }}
                     />
                     <Tooltip
                       formatter={(v, _n, p) => [v, p.payload.full]}
                       contentStyle={{
-                        background: "#161c18",
-                        border: "1px solid rgba(232,226,214,0.15)",
+                        background: "#ffffff",
+                        border: "1px solid rgba(26,34,28,0.15)",
+                        color: "#1a221c",
                       }}
                     />
-                    <Bar dataKey="count" fill="#d4a15a" radius={[0, 4, 4, 0]} />
+                    <Bar dataKey="count" fill="#8a6a2f" radius={[0, 4, 4, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               ) : (

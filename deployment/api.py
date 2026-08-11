@@ -295,6 +295,19 @@ def api_get_job(job_id: str):
 _DASHBOARD_DIST = os.path.join(os.path.dirname(__file__), "dashboard", "dist")
 
 
+def _spa_index_response() -> FileResponse:
+    """Always revalidate index.html so browsers pick up new hashed JS/CSS after rebuild."""
+    index = os.path.join(_DASHBOARD_DIST, "index.html")
+    return FileResponse(
+        index,
+        headers={
+            "Cache-Control": "no-cache, no-store, must-revalidate",
+            "Pragma": "no-cache",
+            "Expires": "0",
+        },
+    )
+
+
 def _mount_spa() -> None:
     if not os.path.isdir(_DASHBOARD_DIST):
         return
@@ -304,8 +317,7 @@ def _mount_spa() -> None:
 
     @app.get("/")
     def spa_index():
-        index = os.path.join(_DASHBOARD_DIST, "index.html")
-        return FileResponse(index)
+        return _spa_index_response()
 
     @app.get("/{full_path:path}")
     def spa_fallback(full_path: str):
@@ -321,7 +333,7 @@ def _mount_spa() -> None:
         candidate = os.path.join(_DASHBOARD_DIST, full_path)
         if os.path.isfile(candidate):
             return FileResponse(candidate)
-        return FileResponse(os.path.join(_DASHBOARD_DIST, "index.html"))
+        return _spa_index_response()
 
 
 _mount_spa()

@@ -46,6 +46,8 @@ export default function App() {
               {" · "}
               {health.youtube_key_set ? "YouTube API ✓" : t.no_api_key}
               {typeof health.n_runs === "number" ? ` · ${health.n_runs} runs` : ""}
+              {" · "}
+              <span title="UI build marker">ui:light</span>
             </p>
           )}
         </div>
