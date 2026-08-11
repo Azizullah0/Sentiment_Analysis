@@ -75,7 +75,7 @@ function formatRange(offset, count, total, t) {
     .replace("{total}", String(total));
 }
 
-export default function RunDetailPage({ t }) {
+export default function RunDetailPage({ t, theme = "light" }) {
   const { runId } = useParams();
   const [detail, setDetail] = useState(null);
   const [comments, setComments] = useState(null);
@@ -178,6 +178,28 @@ export default function RunDetailPage({ t }) {
   const totalComments = comments?.total ?? 0;
   const canPrev = offset > 0;
   const canNext = offset + PAGE_SIZE < totalComments;
+
+  const chartTheme = useMemo(
+    () =>
+      theme === "dark"
+        ? {
+            tick: "#9a927f",
+            grid: "rgba(232,226,214,0.08)",
+            tipBg: "#161c18",
+            tipBorder: "rgba(232,226,214,0.15)",
+            tipFg: "#e8e2d6",
+            bar: "#d4a15a",
+          }
+        : {
+            tick: "#5c675f",
+            grid: "rgba(26,34,28,0.08)",
+            tipBg: "#ffffff",
+            tipBorder: "rgba(26,34,28,0.15)",
+            tipFg: "#1a221c",
+            bar: "#8a6a2f",
+          },
+    [theme]
+  );
 
   const reviewTotal = review.length;
   const reviewOffset = reviewPage * REVIEW_PAGE_SIZE;
@@ -315,26 +337,29 @@ export default function RunDetailPage({ t }) {
               <h3>{t.distribution}</h3>
               <ResponsiveContainer width="100%" height={200}>
                 <BarChart data={chartData}>
-                  <CartesianGrid stroke="rgba(26,34,28,0.08)" vertical={false} />
+                  <CartesianGrid stroke={chartTheme.grid} vertical={false} />
                   <XAxis
                     dataKey="label"
-                    tick={{ fill: "#5c675f", fontSize: 10 }}
+                    tick={{ fill: chartTheme.tick, fontSize: 10 }}
                     interval={0}
                     angle={-20}
                     textAnchor="end"
                     height={48}
                   />
-                  <YAxis tick={{ fill: "#5c675f", fontSize: 10 }} allowDecimals={false} />
+                  <YAxis
+                    tick={{ fill: chartTheme.tick, fontSize: 10 }}
+                    allowDecimals={false}
+                  />
                   <Tooltip
                     contentStyle={{
-                      background: "#ffffff",
-                      border: "1px solid rgba(26,34,28,0.15)",
-                      color: "#1a221c",
+                      background: chartTheme.tipBg,
+                      border: `1px solid ${chartTheme.tipBorder}`,
+                      color: chartTheme.tipFg,
                     }}
                   />
                   <Bar dataKey="count" radius={[4, 4, 0, 0]}>
                     {chartData.map((entry) => (
-                      <Cell key={entry.name} fill={COLORS[entry.name] || "#d4a15a"} />
+                      <Cell key={entry.name} fill={COLORS[entry.name] || chartTheme.bar} />
                     ))}
                   </Bar>
                 </BarChart>
@@ -345,23 +370,23 @@ export default function RunDetailPage({ t }) {
               {videoChart.length ? (
                 <ResponsiveContainer width="100%" height={200}>
                   <BarChart data={videoChart} layout="vertical" margin={{ left: 12 }}>
-                    <CartesianGrid stroke="rgba(26,34,28,0.08)" horizontal={false} />
-                    <XAxis type="number" tick={{ fill: "#5c675f", fontSize: 10 }} />
+                    <CartesianGrid stroke={chartTheme.grid} horizontal={false} />
+                    <XAxis type="number" tick={{ fill: chartTheme.tick, fontSize: 10 }} />
                     <YAxis
                       type="category"
                       dataKey="name"
                       width={64}
-                      tick={{ fill: "#5c675f", fontSize: 10 }}
+                      tick={{ fill: chartTheme.tick, fontSize: 10 }}
                     />
                     <Tooltip
                       formatter={(v, _n, p) => [v, p.payload.full]}
                       contentStyle={{
-                        background: "#ffffff",
-                        border: "1px solid rgba(26,34,28,0.15)",
-                        color: "#1a221c",
+                        background: chartTheme.tipBg,
+                        border: `1px solid ${chartTheme.tipBorder}`,
+                        color: chartTheme.tipFg,
                       }}
                     />
-                    <Bar dataKey="count" fill="#8a6a2f" radius={[0, 4, 4, 0]} />
+                    <Bar dataKey="count" fill={chartTheme.bar} radius={[0, 4, 4, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               ) : (

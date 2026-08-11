@@ -10,11 +10,23 @@ import QueuePage from "./pages/QueuePage";
 import AboutPage from "./pages/AboutPage";
 
 const DICTS = { en, fa };
+const THEME_KEY = "deepdari_theme";
+
+function loadTheme() {
+  try {
+    const v = localStorage.getItem(THEME_KEY);
+    if (v === "dark" || v === "light") return v;
+  } catch {
+    /* ignore */
+  }
+  return "light";
+}
 
 export default function App() {
   const [lang, setLang] = useState(
     () => localStorage.getItem("deepdari_lang") || "en"
   );
+  const [theme, setTheme] = useState(loadTheme);
   const [health, setHealth] = useState(null);
   const t = useMemo(() => DICTS[lang] || en, [lang]);
 
@@ -23,6 +35,11 @@ export default function App() {
     document.documentElement.dir = lang === "fa" ? "rtl" : "ltr";
     localStorage.setItem("deepdari_lang", lang);
   }, [lang]);
+
+  useEffect(() => {
+    document.documentElement.setAttribute("data-theme", theme);
+    localStorage.setItem(THEME_KEY, theme);
+  }, [theme]);
 
   useEffect(() => {
     api.health().then(setHealth).catch(() => setHealth({ status: "error" }));
@@ -47,7 +64,7 @@ export default function App() {
               {health.youtube_key_set ? "YouTube API ✓" : t.no_api_key}
               {typeof health.n_runs === "number" ? ` · ${health.n_runs} runs` : ""}
               {" · "}
-              <span title="UI build marker">ui:light</span>
+              <span title="UI build marker">ui:theme</span>
             </p>
           )}
         </div>
@@ -58,6 +75,22 @@ export default function App() {
           <NavLink to="/job">{t.nav_job}</NavLink>
           <NavLink to="/queue">{t.nav_queue}</NavLink>
           <NavLink to="/about">{t.nav_about}</NavLink>
+          <div className="lang-toggle" role="group" aria-label={t.theme_toggle}>
+            <button
+              type="button"
+              className={theme === "light" ? "active" : ""}
+              onClick={() => setTheme("light")}
+            >
+              {t.theme_light}
+            </button>
+            <button
+              type="button"
+              className={theme === "dark" ? "active" : ""}
+              onClick={() => setTheme("dark")}
+            >
+              {t.theme_dark}
+            </button>
+          </div>
           <div className="lang-toggle" role="group" aria-label="Language">
             <button
               type="button"
@@ -79,7 +112,7 @@ export default function App() {
 
       <Routes>
         <Route path="/" element={<RunsPage t={t} />} />
-        <Route path="/runs/:runId" element={<RunDetailPage t={t} />} />
+        <Route path="/runs/:runId" element={<RunDetailPage t={t} theme={theme} />} />
         <Route path="/job" element={<JobPage t={t} />} />
         <Route path="/queue" element={<QueuePage t={t} />} />
         <Route path="/about" element={<AboutPage t={t} />} />

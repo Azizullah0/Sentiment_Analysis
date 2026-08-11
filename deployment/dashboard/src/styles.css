@@ -1,5 +1,5 @@
 :root {
-  /* Light theme — better for thesis screenshots / print */
+  /* Light (default) — better for thesis screenshots / print */
   --bg0: #f4f6f3;
   --bg1: #ffffff;
   --bg2: #eef2ec;
@@ -14,10 +14,52 @@
   --bad: #a63d32;
   --fear: #9b4450;
   --anger: #b85a2e;
+  --fear-fg: #9b4450;
+  --anger-fg: #b85a2e;
+  --badge-bg: #eef2ec;
+  --logs-bg: #f0f3ef;
+  --logs-ink: #2a332c;
+  --chart-tick: #5c675f;
+  --chart-grid: rgba(26, 34, 28, 0.08);
+  --chart-tooltip-bg: #ffffff;
+  --chart-tooltip-border: rgba(26, 34, 28, 0.15);
+  --btn-fg: #fff8eb;
   --radius: 10px;
   --font: "IBM Plex Sans", system-ui, sans-serif;
   --font-fa: "Vazirmatn", "IBM Plex Sans", Tahoma, sans-serif;
   --shadow: 0 1px 2px rgba(26, 34, 28, 0.06);
+  --grad-a: rgba(138, 106, 47, 0.08);
+  --grad-b: rgba(45, 122, 72, 0.06);
+}
+
+html[data-theme="dark"] {
+  --bg0: #0e1210;
+  --bg1: #161c18;
+  --bg2: #1e2820;
+  --ink: #e8e2d6;
+  --muted: #9a927f;
+  --accent: #d4a15a;
+  --accent-dim: #a67c3d;
+  --accent-soft: rgba(212, 161, 90, 0.14);
+  --line: rgba(232, 226, 214, 0.12);
+  --ok: #6fbf8a;
+  --warn: #d4a15a;
+  --bad: #c96b5d;
+  --fear: #c97b84;
+  --anger: #d07a4c;
+  --fear-fg: #f0c4c8;
+  --anger-fg: #f0c9b0;
+  --badge-bg: rgba(255, 255, 255, 0.03);
+  --logs-bg: #0a0d0b;
+  --logs-ink: #cfc6b4;
+  --chart-tick: #9a927f;
+  --chart-grid: rgba(232, 226, 214, 0.08);
+  --chart-tooltip-bg: #161c18;
+  --chart-tooltip-border: rgba(232, 226, 214, 0.15);
+  --btn-fg: #1a140c;
+  --shadow: none;
+  --grad-a: rgba(212, 161, 90, 0.12);
+  --grad-b: rgba(111, 191, 138, 0.06);
 }
 
 * {
@@ -33,8 +75,8 @@ body,
 body {
   margin: 0;
   background:
-    radial-gradient(1100px 520px at 8% -8%, rgba(138, 106, 47, 0.08), transparent 55%),
-    radial-gradient(900px 480px at 100% 0%, rgba(45, 122, 72, 0.06), transparent 50%),
+    radial-gradient(1100px 520px at 8% -8%, var(--grad-a), transparent 55%),
+    radial-gradient(900px 480px at 100% 0%, var(--grad-b), transparent 50%),
     var(--bg0);
   color: var(--ink);
   font-family: var(--font);
@@ -246,7 +288,7 @@ textarea {
 
 .lang-toggle button.active {
   background: var(--accent);
-  color: #fff8eb;
+  color: var(--btn-fg);
   font-weight: 600;
 }
 
@@ -323,7 +365,7 @@ textarea {
   gap: 0.35rem;
   border: 1px solid var(--accent);
   background: var(--accent);
-  color: #fff8eb;
+  color: var(--btn-fg);
   font-weight: 600;
   padding: 0.55rem 1rem;
   border-radius: 8px;
@@ -408,25 +450,25 @@ td.rtl-text {
   border-radius: 999px;
   font-size: 0.78rem;
   border: 1px solid var(--line);
-  background: var(--bg2);
+  background: var(--badge-bg);
   color: var(--ink);
 }
 
 .badge.Fear {
   border-color: var(--fear);
-  color: var(--fear);
-  background: rgba(155, 68, 80, 0.08);
+  color: var(--fear-fg);
+  background: color-mix(in srgb, var(--fear) 12%, transparent);
 }
 .badge.Anger {
   border-color: var(--anger);
-  color: var(--anger);
-  background: rgba(184, 90, 46, 0.08);
+  color: var(--anger-fg);
+  background: color-mix(in srgb, var(--anger) 12%, transparent);
 }
 .badge.Others {
   color: var(--muted);
 }
 .badge.Excluded {
-  color: #5a6b60;
+  color: var(--muted);
   border-style: dashed;
 }
 
@@ -489,11 +531,11 @@ td.rtl-text {
   white-space: pre-wrap;
   max-height: 240px;
   overflow: auto;
-  background: #f0f3ef;
+  background: var(--logs-bg);
   border-radius: 8px;
   padding: 0.75rem;
   border: 1px solid var(--line);
-  color: #2a332c;
+  color: var(--logs-ink);
 }
 
 .form-grid {
