@@ -505,7 +505,8 @@ td.rtl-text {
 .status-ok {
   color: var(--ok);
 }
-.status-bad {
+.status-bad,
+.status-err {
   color: var(--bad);
 }
 

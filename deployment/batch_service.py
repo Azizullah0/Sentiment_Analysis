@@ -315,6 +315,12 @@ def reaggregate_run_dir(path: str, rewrite_csv: bool = True) -> Dict[str, Any]:
         out_df = pd.DataFrame(rows)
         out_df.to_csv(csv_path, index=False, encoding="utf-8-sig")
         write_sqlite(sqlite_path, rows)
+        review = out_df[out_df["label"].isin(["Fear", "Anger"])].copy()
+        review.to_csv(
+            os.path.join(path, "review_candidates.csv"),
+            index=False,
+            encoding="utf-8-sig",
+        )
 
     return summary
 
@@ -569,6 +575,8 @@ def query_comments(
     records = page.where(pd.notnull(page), None).to_dict(orient="records")
     # normalize types for JSON
     for r in records:
+        if r.get("comment_id") is not None:
+            r["comment_id"] = str(r["comment_id"])
         if "abstain" in r and r["abstain"] is not None:
             r["abstain"] = bool(r["abstain"]) if not isinstance(r["abstain"], str) else r["abstain"] in (
                 "True",
@@ -577,23 +585,58 @@ def query_comments(
             )
         if "confidence" in r and r["confidence"] is not None:
             r["confidence"] = float(r["confidence"])
+        r.pop("all_probabilities", None)
     return {"total": total, "offset": offset, "limit": limit, "items": records}
 
 
+def _normalize_comment_record(r: Dict[str, Any]) -> Dict[str, Any]:
+    """Make a comment/review row JSON-safe and consistent for the dashboard."""
+    out = dict(r)
+    if out.get("comment_id") is not None:
+        out["comment_id"] = str(out["comment_id"])
+    if "abstain" in out and out["abstain"] is not None:
+        if isinstance(out["abstain"], str):
+            out["abstain"] = out["abstain"].strip().lower() in (
+                "true",
+                "1",
+                "yes",
+            )
+        else:
+            out["abstain"] = bool(out["abstain"])
+    if out.get("confidence") is not None:
+        out["confidence"] = float(out["confidence"])
+    # Drop nested blobs that may contain non-JSON numpy types from older exports
+    out.pop("all_probabilities", None)
+    return out
+
+
 def load_review_candidates(run_id: str) -> List[Dict[str, Any]]:
+    """Fear/Anger rows for the Review tab — always match labeled comments (KPI source).
+
+    Prefer rebuilding from labeled_comments so an empty/stale review_candidates.csv
+    (common after reaggregate on older runs) cannot hide real Fear/Anger rows.
+    """
     path = run_dir(run_id)
-    review_path = os.path.join(path, "review_candidates.csv")
-    if os.path.isfile(review_path):
-        df = pd.read_csv(review_path)
-    else:
-        result = query_comments(run_id, limit=100000)
-        items = [
-            i
-            for i in result["items"]
-            if i.get("label") in ("Fear", "Anger")
-        ]
-        return items
-    records = df.where(pd.notnull(df), None).to_dict(orient="records")
+    result = query_comments(run_id, limit=100000)
+    records = [
+        _normalize_comment_record(i)
+        for i in result["items"]
+        if i.get("label") in ("Fear", "Anger")
+    ]
+
+    # If labeled store is missing Fear/Anger but a non-empty CSV exists, use it
+    if not records:
+        review_path = os.path.join(path, "review_candidates.csv")
+        if os.path.isfile(review_path):
+            df = pd.read_csv(review_path)
+            if len(df) > 0:
+                raw = df.where(pd.notnull(df), None).to_dict(orient="records")
+                records = [
+                    _normalize_comment_record(r)
+                    for r in raw
+                    if r.get("label") in ("Fear", "Anger")
+                ]
+
     ann_path = os.path.join(path, "review_annotations.json")
     annotations = {}
     if os.path.isfile(ann_path):
@@ -601,10 +644,9 @@ def load_review_candidates(run_id: str) -> List[Dict[str, Any]]:
             annotations = json.load(f)
     for r in records:
         cid = r.get("comment_id")
-        r["checked"] = bool(annotations.get(cid, {}).get("checked", False))
-        r["note"] = annotations.get(cid, {}).get("note")
-        if r.get("confidence") is not None:
-            r["confidence"] = float(r["confidence"])
+        meta = annotations.get(cid) or annotations.get(str(cid)) or {}
+        r["checked"] = bool(meta.get("checked", False))
+        r["note"] = meta.get("note")
     return records
 
 

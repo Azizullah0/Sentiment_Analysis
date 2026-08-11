@@ -80,6 +80,7 @@ export default function RunDetailPage({ t, theme = "light" }) {
   const [detail, setDetail] = useState(null);
   const [comments, setComments] = useState(null);
   const [review, setReview] = useState([]);
+  const [reviewErr, setReviewErr] = useState(null);
   const [label, setLabel] = useState("");
   const [videoId, setVideoId] = useState("");
   const [q, setQ] = useState("");
@@ -134,10 +135,17 @@ export default function RunDetailPage({ t, theme = "light" }) {
       .run(runId)
       .then(setDetail)
       .catch((e) => setErr(e.message));
+    setReviewErr(null);
     api
       .review(runId)
-      .then((d) => setReview(d.items || []))
-      .catch(() => setReview([]));
+      .then((d) => {
+        setReview(Array.isArray(d.items) ? d.items : []);
+        setReviewErr(null);
+      })
+      .catch((e) => {
+        setReview([]);
+        setReviewErr(e.message || String(e));
+      });
   }, [runId]);
 
   useEffect(() => {
@@ -209,7 +217,7 @@ export default function RunDetailPage({ t, theme = "light" }) {
 
   async function saveReview() {
     const items = review.map((r) => ({
-      comment_id: r.comment_id,
+      comment_id: String(r.comment_id),
       checked: !!r.checked,
       note: r.note || null,
     }));
@@ -506,75 +514,86 @@ export default function RunDetailPage({ t, theme = "light" }) {
             </button>
             {saveMsg && <span className="status-ok">{saveMsg}</span>}
           </div>
-          <div className="table-wrap table-fit">
-            <table>
-              <thead>
-                <tr>
-                  <th>{t.checked}</th>
-                  <th>{t.filter_label}</th>
-                  <th>{t.confidence}</th>
-                  <th>{t.table}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {reviewSlice.map((row) => {
-                  const idx = review.findIndex((r) => r.comment_id === row.comment_id);
-                  return (
-                    <tr key={row.comment_id || idx}>
-                      <td>
-                        <input
-                          type="checkbox"
-                          checked={!!row.checked}
-                          onChange={(e) => {
-                            const next = [...review];
-                            next[idx] = { ...row, checked: e.target.checked };
-                            setReview(next);
-                          }}
-                        />
-                      </td>
-                      <td>
-                        <span className={`badge ${row.label}`}>
-                          {t[row.label] || row.label}
-                        </span>
-                      </td>
-                      <td>
-                        {row.confidence != null
-                          ? Number(row.confidence).toFixed(3)
-                          : "—"}
-                      </td>
-                      <td className="rtl-text">{row.text_original}</td>
+          {reviewErr && <p className="status-err">{reviewErr}</p>}
+          {!reviewErr && reviewTotal === 0 && (
+            <p className="empty muted">{t.review_empty}</p>
+          )}
+          {reviewTotal > 0 && (
+            <>
+              <div className="table-wrap table-fit">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>{t.checked}</th>
+                      <th>{t.filter_label}</th>
+                      <th>{t.confidence}</th>
+                      <th>{t.table}</th>
                     </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-          <div className="pager">
-            <button
-              type="button"
-              className="btn secondary"
-              disabled={!reviewCanPrev}
-              onClick={() => setReviewPage((p) => Math.max(0, p - 1))}
-            >
-              {t.prev}
-            </button>
-            <span className="pager-meta muted">
-              {formatRange(
-                reviewOffset,
-                reviewSlice.length,
-                reviewTotal,
-                t
-              )}
-            </span>
-            <button
-              type="button"
-              className="btn secondary"
-              disabled={!reviewCanNext}
-              onClick={() => setReviewPage((p) => p + 1)}
-            >
-              {t.next}
-            </button>
-          </div>
+                  </thead>
+                  <tbody>
+                    {reviewSlice.map((row) => {
+                      const idx = review.findIndex(
+                        (r) => String(r.comment_id) === String(row.comment_id)
+                      );
+                      return (
+                        <tr key={row.comment_id || idx}>
+                          <td>
+                            <input
+                              type="checkbox"
+                              checked={!!row.checked}
+                              onChange={(e) => {
+                                if (idx < 0) return;
+                                const next = [...review];
+                                next[idx] = { ...row, checked: e.target.checked };
+                                setReview(next);
+                              }}
+                            />
+                          </td>
+                          <td>
+                            <span className={`badge ${row.label}`}>
+                              {t[row.label] || row.label}
+                            </span>
+                          </td>
+                          <td>
+                            {row.confidence != null
+                              ? Number(row.confidence).toFixed(3)
+                              : "—"}
+                          </td>
+                          <td className="rtl-text">{row.text_original}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+              <div className="pager">
+                <button
+                  type="button"
+                  className="btn secondary"
+                  disabled={!reviewCanPrev}
+                  onClick={() => setReviewPage((p) => Math.max(0, p - 1))}
+                >
+                  {t.prev}
+                </button>
+                <span className="pager-meta muted">
+                  {formatRange(
+                    reviewOffset,
+                    reviewSlice.length,
+                    reviewTotal,
+                    t
+                  )}
+                </span>
+                <button
+                  type="button"
+                  className="btn secondary"
+                  disabled={!reviewCanNext}
+                  onClick={() => setReviewPage((p) => p + 1)}
+                >
+                  {t.next}
+                </button>
+              </div>
+            </>
+          )}
         </div>
       )}
     </section>

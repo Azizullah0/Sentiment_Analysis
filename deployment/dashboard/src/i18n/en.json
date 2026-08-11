@@ -58,6 +58,7 @@
   "abstain": "Abstain",
   "checked": "Reviewed",
   "save_review": "Save review marks",
+  "review_empty": "No Fear/Anger comments in this run.",
   "saved": "Saved",
   "job_title": "Start labeling job",
   "job_model": "Model (ablation checkpoint)",
