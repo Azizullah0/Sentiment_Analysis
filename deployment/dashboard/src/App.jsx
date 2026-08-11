@@ -8,6 +8,7 @@ import RunDetailPage from "./pages/RunDetailPage";
 import JobPage from "./pages/JobPage";
 import QueuePage from "./pages/QueuePage";
 import AboutPage from "./pages/AboutPage";
+import DeepDariLogo from "./DeepDariLogo";
 
 const DICTS = { en, fa };
 const THEME_KEY = "deepdari_theme";
@@ -50,8 +51,9 @@ export default function App() {
       <header className="topbar">
         <div className="brand-block">
           <h1>
-            <Link to="/" style={{ color: "inherit" }}>
-              {t.brand}
+            <Link to="/" className="brand-link">
+              <DeepDariLogo title={t.brand} />
+              <span>{t.brand}</span>
             </Link>
           </h1>
           <p>{t.tagline}</p>
@@ -64,7 +66,7 @@ export default function App() {
               {health.youtube_key_set ? "YouTube API ✓" : t.no_api_key}
               {typeof health.n_runs === "number" ? ` · ${health.n_runs} runs` : ""}
               {" · "}
-              <span title="UI build marker">ui:theme</span>
+              <span title="UI build marker">ui:logo</span>
             </p>
           )}
         </div>
