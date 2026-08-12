@@ -4,8 +4,8 @@ export default function DeepDariLogo({ className = "brand-logo", title = "DEEP-D
     <svg
       className={className}
       viewBox="0 0 64 64"
-      width="48"
-      height="48"
+      width="34"
+      height="34"
       role="img"
       aria-label={title}
       xmlns="http://www.w3.org/2000/svg"

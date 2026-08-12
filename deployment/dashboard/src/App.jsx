@@ -58,7 +58,7 @@ export default function App() {
           </h1>
           <p>{t.tagline}</p>
           {health && (
-            <p className="muted" style={{ marginTop: "0.5rem", fontSize: "0.85rem" }}>
+            <p className="muted brand-meta">
               <span className={health.status === "ok" ? "status-ok" : "status-bad"}>
                 {health.status === "ok" ? t.model_ok : t.model_bad}
               </span>
@@ -66,7 +66,7 @@ export default function App() {
               {health.youtube_key_set ? "YouTube API ✓" : t.no_api_key}
               {typeof health.n_runs === "number" ? ` · ${health.n_runs} runs` : ""}
               {" · "}
-              <span title="UI build marker">ui:logo</span>
+              <span title="UI build marker">ui:header-fit</span>
             </p>
           )}
         </div>
